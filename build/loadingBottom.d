@@ -1,1 +1,0 @@
-loadingBottom.o: loadingBottom.s

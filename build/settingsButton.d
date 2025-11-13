@@ -1,1 +1,0 @@
-settingsButton.o: settingsButton.s

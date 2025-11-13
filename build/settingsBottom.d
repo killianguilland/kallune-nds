@@ -1,1 +1,0 @@
-settingsBottom.o: settingsBottom.s

@@ -1,1 +1,0 @@
-gameBottom.o: gameBottom.s

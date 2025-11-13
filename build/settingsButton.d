@@ -1,0 +1,1 @@
+settingsButton.o: settingsButton.s

@@ -1,1 +1,0 @@
-menuBottom.o: menuBottom.s

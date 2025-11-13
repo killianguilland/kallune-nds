@@ -1,1 +1,0 @@
-startButton.o: startButton.s

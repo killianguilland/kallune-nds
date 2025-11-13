@@ -1,1 +1,0 @@
-pauseBottom.o: pauseBottom.s

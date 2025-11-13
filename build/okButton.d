@@ -1,1 +1,0 @@
-okButton.o: okButton.s

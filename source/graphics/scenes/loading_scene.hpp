@@ -1,22 +1,18 @@
 #pragma once
-
-#include <exitButton.h>
+#include <loadingBottom.h>
+#include <loadingTop.h>
 #include <nds.h>
-#include <pauseBottom.h>
-#include <pauseTop.h>
-#include <playButton.h>
+#include <stdio.h>
 
 // #include "graphics/elements/animatedSprite.hpp"
 #include "graphics/elements/background.hpp"
-#include "graphics/elements/button.hpp"
 #include "graphics/scene.hpp"
-#include "input/scenes/pause_state.hpp"
 #include "logic/game.hpp"
 
-class PauseScene : public SceneInterface {
+class LoadingScene : public SceneInterface {
 public:
-    PauseScene(const Game* /*_*/);
-    ~PauseScene() override;
+    LoadingScene(const Game* /*_*/);
+    ~LoadingScene() override;
 
     void draw(const Input& input) override;
     void postRender() override;
@@ -24,6 +20,4 @@ public:
 private:
     Background* backgroundTop{};
     Background* backgroundBottom{};
-    Button*     playButton{};
-    Button*     exitButton{};
 };

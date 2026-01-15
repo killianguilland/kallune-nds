@@ -1,32 +1,30 @@
 #pragma once
-#include <nds.h>
-#include <stdio.h>
-#include <menuTop.h>
 #include <menuBottom.h>
-#include <startButton.h>
+#include <menuTop.h>
+#include <nds.h>
 #include <settingsButton.h>
+#include <startButton.h>
+#include <stdio.h>
 
 // #include "graphics/elements/animatedSprite.hpp"
-#include "input/scenes/menu_state.hpp"
-#include "utils/scene.hpp"
-#include "utils/router.hpp"
 #include "graphics/elements/background.hpp"
 #include "graphics/elements/button.hpp"
+#include "graphics/scene.hpp"
+#include "logic/game.hpp"
 
-class MenuScene
-{
+class MenuScene : public SceneInterface {
 public:
-    MenuScene(OAMTable* oam);
-    ~MenuScene() = default;
+    MenuScene(const Game* /*_*/);
+    ~MenuScene() override;
 
-    void draw(double deltaTime, const MenuState* state);
+    void draw(const Input& input) override;
+    void postRender() override;
 
 private:
-    OAMTable* oam {nullptr};
-    Background* backgroundTop = new Background(menuTopBitmap, menuTopBitmapLen, true);
-    Background* backgroundBottom = new Background(menuBottomBitmap, menuBottomBitmapLen, false);
-    Button* startButton {};
-    Button* settingsButton {};
+    Background*  backgroundTop{};
+    Background*  backgroundBottom{};
+    Button*      startButton{};
+    Button*      settingsButton{};
     SpriteEntry* settingsButtonSprite;
     SpriteEntry* startButtonSprite;
 };

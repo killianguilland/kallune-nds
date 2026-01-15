@@ -1,27 +1,52 @@
 #include "pause_scene.hpp"
+#include "graphics/hardware.hpp"
 
-PauseScene::PauseScene(OAMTable* oam)
+PauseScene::PauseScene(const Game* /*_*/)
 {
-    this->oam = oam;
+    Hardware::setupUILayout();
 
-    int currentTileOffset = 0;
+    backgroundTop    = new Background(pauseTopBitmap, pauseTopBitmapLen, true);
+    backgroundBottom = new Background(pauseBottomBitmap, pauseBottomBitmapLen, false);
+
+    exitButton = new Button(
+        0, // oamId
+        0, // paletteId
+        exitButtonPal,
+        exitButtonPalLen,
+        exitButtonTiles,
+        exitButtonTilesLen,
+        SpriteSize_64x64, // sprite size
+        77,               // X
+        150               // Y
+    );
 
     playButton = new Button(
-        oam,
-        0,
-        0,
+        1,
+        1,
         playButtonPal,
         playButtonPalLen,
         playButtonTiles,
         playButtonTilesLen,
-        32,
-        113,
-        150,
-        &currentTileOffset
+        SpriteSize_32x32,
+        148,
+        150
     );
 }
 
-void PauseScene::draw(double deltaTime, const PauseState* pauseState)
+void PauseScene::draw(const Input& input)
 {
+    const PauseState* pauseState = input.getPauseState();
+    exitButton->draw(pauseState->exitButton);
     playButton->draw(pauseState->returnButton);
+}
+
+void PauseScene::postRender()
+{
+}
+
+PauseScene::~PauseScene()
+{
+    delete exitButton;
+    delete playButton;
+    oamClear(&oamMain, 0, 0);
 }

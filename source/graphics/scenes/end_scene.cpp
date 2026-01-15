@@ -1,29 +1,41 @@
 #include "end_scene.hpp"
+#include "graphics/hardware.hpp"
+#include "input/scenes/end_state.hpp"
 
 static const int DMA_CHANNEL = 3;
 
-EndScene::EndScene(OAMTable* oam)
+EndScene::EndScene(const Game* /*game*/)
 {
-    this->oam = oam;
+    Hardware::setupUILayout();
 
-    int currentTileOffset = 0;
+    backgroundTop    = new Background(endTopBitmap, endTopBitmapLen, true);
+    backgroundBottom = new Background(endBottomBitmap, endBottomBitmapLen, false);
 
     okButton = new Button(
-        oam,
         0,
         0,
         okButtonPal,
         okButtonPalLen,
         okButtonTiles,
         okButtonTilesLen,
-        32,
+        SpriteSize_32x32,
         113,
-        150,
-        &currentTileOffset
+        150
     );
 }
 
-void EndScene::draw(double deltaTime, const EndState* state)
+void EndScene::draw(const Input& input)
 {
-    okButton->draw(state->exitButton);
+    const EndState* endState = input.getEndState();
+    okButton->draw(endState->exitButton);
+}
+
+void EndScene::postRender()
+{
+}
+
+EndScene::~EndScene()
+{
+    delete okButton;
+    oamClear(&oamMain, 0, 0);
 }

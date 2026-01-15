@@ -1,45 +1,52 @@
 #include "game_scene.hpp"
+#include "graphics/hardware.hpp"
+#include "input/input.hpp"
+#include "input/scenes/playing_state.hpp"
 
-GameScene::GameScene(OAMTable* oam)
+GameScene::GameScene(const Game* game) : minimap(game->map), terrain(), game(game)
 {
-    this->oam = oam;
-    int currentTileOffset = 0;
+    Hardware::setupGameLayout();
 
-    // Each pixel = 16 bits (u16), laid out row by row.
-    // Mode 5 = 160×128 pixels, Mode 3 = 256×256 pixels
-    int x = 10;
-    int y = 10;
-
-    // Make sure you're in the correct range for your mode!
-    int width = 256; // Mode 5 width
-    u16 color = RGB15(31, 0, 0) | BIT(15);  // Red with alpha bit set
-
-
-    pauseButtonTiles[y * width + x] = color;
+    backgroundBottom = new Background(gameBottomBitmap, gameBottomBitmapLen, true);
 
     pauseButton = new Button(
-        oam,
-        0,
-        0,
+        0, 0,
         pauseButtonPal,
         pauseButtonPalLen,
         pauseButtonTiles,
         pauseButtonTilesLen,
-        32,
-        113,
-        150,
-        &currentTileOffset
+        SpriteSize_32x32,
+        113, 150,
+        &oamSub,
+        SPRITE_PALETTE_SUB
     );
-
-    u16* bgPixels = (u16*)BG_BMP_RAM_SUB(0);
-
-    bgPixels[y * width + x] = color;
 }
 
-void GameScene::update(Router* router) {
-}
-
-void GameScene::draw(double deltaTime, const PlayingState* playingState)
+void GameScene::draw(const Input& input)
 {
+    const PlayingState* playingState = input.getPlayingState();
     pauseButton->draw(playingState->pauseButton);
+
+    // Met à jour la position de la caméra pour suivre le joueur
+    x = game->getPlayerX();
+    y = game->getPlayerY();
+
+    terrain.draw(game->map, x, y);
+
+    // TODO : if badger moved more than a meaningful amount of pixels
+    // if(this->badgerMoved) {
+    this->minimap.draw(x, y);
+    // this->badgerMoved = false;
+    // };
+}
+
+void GameScene::postRender()
+{
+    terrain.swapBuffers();
+}
+
+GameScene::~GameScene()
+{
+    delete pauseButton;
+    oamClear(&oamMain, 0, 0);
 }

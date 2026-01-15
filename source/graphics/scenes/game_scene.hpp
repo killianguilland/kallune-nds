@@ -1,28 +1,33 @@
 #pragma once
 
-#include <nds.h>
 #include <gameBottom.h>
 #include <gameTop.h>
+#include <nds.h>
 #include <pauseButton.h>
-
-#include "utils/scene.hpp"
-#include "utils/router.hpp"
 #include "graphics/elements/background.hpp"
 #include "graphics/elements/button.hpp"
+#include "graphics/elements/minimap.hpp"
+#include "graphics/elements/terrain.hpp"
+#include "graphics/scene.hpp"
 #include "input/scenes/playing_state.hpp"
+#include "logic/game.hpp"
 
-class GameScene
-{
+class GameScene : public SceneInterface {
 public:
-    GameScene(OAMTable* oam);
-    ~GameScene() = default;
+    GameScene(const Game* game);
+    ~GameScene() override;
 
-    void update(Router* router);
-    void draw(double deltaTime, const PlayingState* playingState);
+    void draw(const Input& input) override;
+    void postRender() override;
 
 private:
-    OAMTable* oam {nullptr};
-    Background* backgroundTop = new Background(gameTopBitmap, gameTopBitmapLen, true);
-    Background* backgroundBottom = new Background(gameBottomBitmap, gameBottomBitmapLen, false);
-    Button* pauseButton {};
+    // Background* backgroundTop = new Background(gameTopBitmap, gameTopBitmapLen, false);
+    Background* backgroundBottom{};
+    Button*     pauseButton{};
+    const Game* game{nullptr};
+    Minimap     minimap;
+    Terrain     terrain{};
+    bool        badgerMoved{true};
+    float       x{0};
+    float       y{0};
 };

@@ -12,7 +12,8 @@ Installation et compilation rapide
 1. Installez devkitPro / devkitARM selon la documentation officielle.
 2. Dans votre shell (zsh), exportez la variable d'environnement utilisée par le Makefile :
 
-	export DEVKITARM=/chemin/vers/devkitARM
+	export DEVKITPRO=/chemin/vers/devkitPro
+	export DEVKITARM=$DEVKITPRO/devkitARM
 
 3. À la racine du dépôt, lancez la compilation :
 
@@ -21,8 +22,20 @@ Installation et compilation rapide
 Le Makefile s'appuie sur les règles de `ds_rules` (fourni par devkitARM). Si tout est configuré, cela produira un fichier `.nds` exécutable.
 
 Notes
-- Ce projet utilise la toolchain et les utilitaires de devkitPro pour convertir les graphismes et l'audio (grit, maxmod/mmutil, bin2o).
+- Ce projet utilise la toolchain de devkitPro pour convertir les graphismes et l'audio (grit, maxmod/mmutil, bin2o).
 - Pour tester la ROM (melon / no$gba), utilisez un émulateur NDS compatible ou bien tout simplement une console Nintendo DS.
+
+## Organisation du code
+
+- `gfx/` : ressources graphiques et audio.
+- `source/` : code source C++ du jeu.
+- `source/graphics/` : gestion des graphismes.
+- `source/sounds/` : gestion de l'audio.
+- `source/logic/` : logique du jeu.
+- `source/input/` : gestion des entrées utilisateur.
+- `source/utils/` : utilitaires divers.
+- `source/main.cpp` : point d'entrée principal.
+- `Makefile` : script de compilation.
 
 ## Crédits
 

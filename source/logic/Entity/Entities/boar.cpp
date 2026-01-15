@@ -37,7 +37,7 @@ void Boar::decideBehavior(Player &player)
     }
 }
 
-void Boar::update(float deltaTime)
+void Boar::update()
 {
     if (!flowField || !isAlive())
     {
@@ -60,8 +60,8 @@ void Boar::update(float deltaTime)
             dirX /= length;
             dirY /= length;
 
-            x += dirX * speed * deltaTime;
-            y += dirY * speed * deltaTime;
+    //         x += dirX * speed;
+    //         y += dirY * speed;
 
             calculateDirection(dirX, dirY);
         }

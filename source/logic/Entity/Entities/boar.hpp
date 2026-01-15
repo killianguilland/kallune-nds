@@ -10,7 +10,7 @@ public:
     Boar(float startX, float startY);
     Boar(float startX, float startY, const Player* player, const FlowField* flowField);
 
-    void update(float deltaTime) override;
+    void update() override;
     void decideBehavior(Player& player) override;
 
 private:

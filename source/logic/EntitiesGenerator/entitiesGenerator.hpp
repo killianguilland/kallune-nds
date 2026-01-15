@@ -17,7 +17,7 @@ public:
     EntitiesGenerator(FlowField *flowField, Player *player);
     ~EntitiesGenerator();
 
-    void update(float deltaTime);
+    void update();
     const std::vector<Entity *> &getEntities() const;
 private:
     std::vector<Entity *> entities;

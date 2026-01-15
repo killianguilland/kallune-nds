@@ -33,7 +33,7 @@ void Deer::decideBehavior(Player &player)
     }
 }
 
-void Deer::update(float deltaTime)
+void Deer::update()
 {
     if (!flowField || !isAlive())
     {
@@ -61,8 +61,8 @@ void Deer::update(float deltaTime)
             dirX /= length;
             dirY /= length;
 
-            x -= dirX * speed * deltaTime;
-            y -= dirY * speed * deltaTime;
+        //     x -= dirX * speed;
+        //     y -= dirY * speed;
 
             calculateDirection(dirX, dirY);
         }

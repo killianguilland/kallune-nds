@@ -10,7 +10,7 @@ public:
     Entity(float startX, float startY);
     virtual ~Entity() = default;
 
-    virtual void update(float deltaTime) = 0;
+    virtual void update() = 0;
     virtual void decideBehavior( Player& player) = 0;
 
     void setFlowField(const FlowField* field);

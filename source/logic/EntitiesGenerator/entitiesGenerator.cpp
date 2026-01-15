@@ -5,11 +5,11 @@ EntitiesGenerator::EntitiesGenerator(FlowField *flowField, Player *player)
 {
 }
 
-void EntitiesGenerator::update(float deltaTime)
+void EntitiesGenerator::update()
 {
     for (auto it = entities.begin(); it != entities.end();)
     {
-        (*it)->update(deltaTime);
+        (*it)->update();
 
         if (!(*it)->isAlive())
         {

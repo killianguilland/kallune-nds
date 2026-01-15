@@ -1,0 +1,24 @@
+# --- Configuration pour Software Blitting ---
+
+-s tile025
+
+# 1. Mode Bitmap
+-gb
+
+# 2. Profondeur de couleur : 16 bits (RGB555)
+-gB16
+
+# 3. Transparence : Magenta (FF00FF)
+# On s'assure qu'il n'y a pas d'espace entre -gT et la couleur
+-gTFF00FF
+
+# 4. Forcer l'alignement 32 bits (Important pour le DMA et la rapidité)
+-Mw4
+
+# 5. Pas de palette, pas de map
+-p!
+-m!
+
+# 6. Option de sécurité pour le bit d'alpha
+# -al force le bit 15 à 0 pour la couleur transparente
+-al

@@ -49,7 +49,7 @@ void Graphics::setupScene(const Game* game, Scene type)
 
 void Graphics::render(Router* router, Input input, const Game* game)
 {
-    // TODO : calculate deltaTime
+    cpuStartTiming(0);
 
     // Changement de scène automatique
     if (router->previousScene != router->currentScene)
@@ -63,6 +63,10 @@ void Graphics::render(Router* router, Input input, const Game* game)
     {
         currentScene->draw(input);
     }
+
+    u32   cycles = cpuEndTiming();
+    float usage  = (cycles / 1120380.0f) * 100.0f;
+    fprintf(stderr, "GRAPHICS BUDGET: %f%%   \n", usage);
 }
 
 void Graphics::postRender(Router* router)

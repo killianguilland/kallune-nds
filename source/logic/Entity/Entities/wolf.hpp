@@ -1,17 +1,15 @@
 #pragma once
-#include "../../Player/player.hpp"
 #include "../../Flowfield/flowfield.hpp"
+#include "../../Player/player.hpp"
 #include "../entity.hpp"
-#include <cmath>
 
-class Wolf : public Entity
-{
+class Wolf : public Entity {
 public:
     Wolf(float startX, float startY);
-    Wolf(float startX, float startY, const Player *player, const FlowField *flowField);
+    Wolf(float startX, float startY, const Player* player, const FlowField* flowField);
 
-    void decideBehavior(Player &player) override;
     void update() override;
+    void decideBehavior(Player& player) override;
 
 private:
     bool aggressive() const override { return true; }

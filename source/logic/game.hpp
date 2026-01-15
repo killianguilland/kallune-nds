@@ -31,11 +31,11 @@ struct EntityInfo
 class Game
 {
 public:
-    Game();
+    Game(int waterValue, int sizeValue, int typeValue);
     ~Game();
     Map map;
 
-    void update(float deltaTime, InputState input);
+    void update(InputState input);
 
     float getPlayerX() const;
     float getPlayerY() const;
@@ -50,7 +50,6 @@ public:
 
     bool isPlayerAlive();
     
-
     void setKeyState(int keyCode, bool pressed)
     {
         keyStates[keyCode] = pressed;
@@ -76,7 +75,7 @@ private:
     Player player;
 
     std::vector<Entity *> entities;
-    void handlePlayerMovement(const InputState &inputState, float deltaTime);
+    void handlePlayerMovement(const InputState &inputState);
 
     std::unordered_map<int, bool> keyStates;
 
@@ -84,7 +83,7 @@ private:
     void placeEntityRandomly(Entity *entity);
 
     void updateFlowField();
-    void updateEntities(float deltaTime);
+    void updateEntities();
 
     bool isWalkableTile(int x, int y) const;
 };

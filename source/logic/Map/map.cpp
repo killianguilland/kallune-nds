@@ -1,10 +1,24 @@
 #include "./map.hpp"
+#include <array>
 
-Map::Map() : width(100), height(100), generator(width, height)
+static const std::array<int, 5> waterSettings = {0, 56, 58, 62, 80};
+static const std::array<int, 5> sizeSettings  = {24, 56, 72, 90, 120};
+static const std::array<int, 5> typeSettings  = {1, 2, 4, 6, 12};
+
+Map::Map(int waterValue, int sizeValue, int typeValue)
+    : width(sizeSettings[sizeValue]), height(sizeSettings[sizeValue]),
+    // On initialise le générateur ici, avec ses paramètres !
+    generator(sizeSettings[sizeValue], sizeSettings[sizeValue])
 {
-    this->generator.generate(60, 6, 2, 4, 4);
-    map = this->generator.getMap();
+    // Maintenant que generator est correctement créé, on peut l'utiliser
+    this->generator.generate(waterSettings[waterValue], 6U, 2, 4, 4);
+    this->map = this->generator.getMap();
 }
+
+// void Map::init() {
+//     this->generator.generate(60, 6, 2, 4, 4);
+//     map = this->generator.getMap();
+// }
 
 vector<vector<float>> Map::getSpeedMap() const
 {
@@ -48,15 +62,18 @@ bool Map::isWalkable(int tileX, int tileY)
     return speed > 0.0f;
 }
 
-void Map::removeFlower(int tileX, int tileY) {
-        if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
-            return;
-        if (map[tileX][tileY] == MapType::FLOWER) {
-            map[tileX][tileY] = MapType::GRASS; 
-        }
+void Map::removeFlower(int tileX, int tileY)
+{
+    if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
+        return;
+    if (map[tileX][tileY] == MapType::FLOWER)
+    {
+        map[tileX][tileY] = MapType::GRASS;
     }
+}
 
-void Map::changeTile(int tileX, int tileY, MapType newType) {
+void Map::changeTile(int tileX, int tileY, MapType newType)
+{
     if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
         return;
     map[tileX][tileY] = newType;

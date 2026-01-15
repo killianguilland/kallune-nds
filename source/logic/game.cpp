@@ -1,15 +1,14 @@
 #include "game.hpp"
+#include <stdio.h>
 #include <cstdlib>
 #include <ctime>
+#include <optional>
 #include <random>
 #include <set>
-#include <optional>
-#include <stdio.h>
 
-Game::Game()
-    : map(), flowField(map.getWidth(), map.getHeight()), player(50.0f, 50.0f, map)
+Game::Game(int waterValue, int sizeValue, int typeValue)
+    : map(waterValue, sizeValue, typeValue), flowField(map.getWidth(), map.getHeight()), player(50.0f, 50.0f, map)
 {
-
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
     auto positionOpt = getRandomPlacablePosition();
@@ -30,68 +29,48 @@ Game::Game()
     generateEntities(7, 3, 4);
 }
 
-void Game::handlePlayerMovement(const InputState &inputState, float deltaTime)
+void Game::handlePlayerMovement(const InputState& inputState)
 {
-    float dirX = 0.0f;
-    float dirY = 0.0f;
-
-    // if (inputState.keyStates[GLFW_KEY_W] == GLFW_PRESS || inputState.keyStates[GLFW_KEY_W] == GLFW_REPEAT)
+    // if (inputState.moveX == 0.0f && inputState.moveY == 0.0f)
     // {
-    //     dirY += 1.0f;
-    // }
-    // if (inputState.keyStates[GLFW_KEY_S] == GLFW_PRESS || inputState.keyStates[GLFW_KEY_S] == GLFW_REPEAT)
-    // {
-    //     dirY -= 1.0f;
-    // }
-    // if (inputState.keyStates[GLFW_KEY_A] == GLFW_PRESS || inputState.keyStates[GLFW_KEY_A] == GLFW_REPEAT)
-    // {
-    //     dirX -= 1.0f;
-    // }
-    // if (inputState.keyStates[GLFW_KEY_D] == GLFW_PRESS || inputState.keyStates[GLFW_KEY_D] == GLFW_REPEAT)
-    // {
-    //     dirX += 1.0f;
+    //     player.calculateBehavior(inputState.moveX, inputState.moveY);
+    //     return;
     // }
 
-    if (dirX == 0.0f && dirY == 0.0f)
-    {
-        player.calculateBehavior(dirX, dirY);
-        return;
-    }
+    // if (inputState.moveX > 0.0f)
+    //     player.setDirection(Direction::EAST);
+    // else if (inputState.moveX < 0.0f)
+    //     player.setDirection(Direction::WEST);
+    // else if (inputState.moveY > 0.0f)
+    //     player.setDirection(Direction::SOUTH);
+    // else if (inputState.moveY < 0.0f)
+    //     player.setDirection(Direction::NORTH);
 
-    if (dirX > 0.0f)
-        player.setDirection(Direction::EAST);
-    else if (dirX < 0.0f)
-        player.setDirection(Direction::WEST);
-    else if (dirY > 0.0f)
-        player.setDirection(Direction::SOUTH);
-    else if (dirY < 0.0f)
-        player.setDirection(Direction::NORTH);
+    // float nextX = player.getX() + inputState.moveX * player.getSpeed();
+    // float nextY = player.getY() + inputState.moveY * player.getSpeed();
 
-    float nextX = player.getX() + dirX * player.getSpeed() * deltaTime;
-    float nextY = player.getY() + dirY * player.getSpeed() * deltaTime;
+    // int tileX = static_cast<int>(nextX);
+    // int tileY = static_cast<int>(nextY);
 
-    int tileX = static_cast<int>(nextX);
-    int tileY = static_cast<int>(nextY);
+    // int tileXOffset = static_cast<int>(nextX + (inputState.moveX < 0 ? -0.2f : 0.2f));
+    // int tileYOffset = static_cast<int>(nextY + (inputState.moveY < 0 ? -0.2f : 0.2f));
 
-    int tileXOffset = static_cast<int>(nextX + (dirX < 0 ? -0.2f : 0.2f));
-    int tileYOffset = static_cast<int>(nextY + (dirY < 0 ? -0.2f : 0.2f));
+    // if (map.getMap()[tileX][tileY] == MapType::WATER)
+    // {
+    //     // player.kill();
+    // }
 
-    if (map.getMap()[tileX][tileY] == MapType::WATER)
-    {
-        player.kill();
-    }
+    // if (!map.isWalkable(tileXOffset, tileY))
+    // {
+    //     // inputState.moveX = 0.0f;
+    // }
+    // if (!map.isWalkable(tileX, tileYOffset))
+    // {
+    //     // inputState.moveY = 0.0f;
+    // }
 
-    if (!map.isWalkable(tileXOffset, tileY))
-    {
-        dirX = 0.0f;
-    }
-    if (!map.isWalkable(tileX, tileYOffset))
-    {
-        dirY = 0.0f;
-    }
-
-    player.move(dirX, dirY, deltaTime);
-    player.calculateBehavior(dirX, dirY);
+    player.move(inputState.moveX, inputState.moveY);
+    // player.calculateBehavior(inputState.moveX, inputState.moveY);
 
     // if (inputState.keyStates[GLFW_KEY_E] == GLFW_PRESS || inputState.keyStates[GLFW_KEY_E] == GLFW_REPEAT)
     // {
@@ -99,17 +78,22 @@ void Game::handlePlayerMovement(const InputState &inputState, float deltaTime)
     // }
 }
 
-void Game::update(float deltaTime, InputState inputState)
+void Game::update(InputState inputState)
 {
+    cpuStartTiming(0);
     if (player.isAlive())
     {
-    handlePlayerMovement(inputState, deltaTime);
+        handlePlayerMovement(inputState);
 
-    player.update(deltaTime);
-    updateFlowField();
+        // player.update();
+        // updateFlowField();
 
-    updateEntities(deltaTime);
+        // updateEntities();
     }
+
+    u32   cycles = cpuEndTiming();
+    float usage  = (cycles / 1120380.0f) * 100.0f;
+    fprintf(stderr, "LOGIC BUDGET: %f%%   \n", usage);
 }
 
 float Game::getPlayerX() const
@@ -126,16 +110,9 @@ std::vector<EntityInfo> Game::getEntitiesInfo() const
 {
     std::vector<EntityInfo> infos;
     infos.reserve(entities.size());
-    for (const auto &e : entities)
+    for (const auto& e : entities)
     {
-        infos.emplace_back(EntityInfo{
-            e->getX(),
-            e->getY(),
-            e->isAlive(),
-            e->isAggressive(),
-            e->getType(),
-            e->getDirection(),
-            e->getBehavior()});
+        infos.emplace_back(EntityInfo{e->getX(), e->getY(), e->isAlive(), e->isAggressive(), e->getType(), e->getDirection(), e->getBehavior()});
     }
 
     return infos;
@@ -149,39 +126,39 @@ bool Game::isKeyPressed(int keyCode) const
 
 void Game::generateEntities(int countWolf, int countBoar, int countDeer)
 {
-    for (int i = 0; i < countWolf; ++i)
-    {
-        Wolf *wolf = new Wolf(0, 0, &player, &flowField);
-        placeEntityRandomly(wolf);
-        entities.push_back(wolf);
-    }
-    for (int i = 0; i < countBoar; ++i)
-    {
-        Boar *boar = new Boar(0, 0, &player, &flowField);
-        placeEntityRandomly(boar);
-        entities.push_back(boar);
-    }
-    for (int i = 0; i < countDeer; ++i)
-    {
-        Deer *deer = new Deer(0, 0, &player, &flowField);
-        placeEntityRandomly(deer);
-        entities.push_back(deer);
-    }
+    // for (int i = 0; i < countWolf; ++i)
+    // {
+    //     Wolf *wolf = new Wolf(0, 0, &player, &flowField);
+    //     placeEntityRandomly(wolf);
+    //     entities.push_back(wolf);
+    // }
+    // for (int i = 0; i < countBoar; ++i)
+    // {
+    //     Boar *boar = new Boar(0, 0, &player, &flowField);
+    //     placeEntityRandomly(boar);
+    //     entities.push_back(boar);
+    // }
+    // for (int i = 0; i < countDeer; ++i)
+    // {
+    //     Deer *deer = new Deer(0, 0, &player, &flowField);
+    //     placeEntityRandomly(deer);
+    //     entities.push_back(deer);
+    // }
 }
 
 Game::~Game()
 {
     // for (auto entity : entities)
     // {
-        // delete entity;
+    // delete entity;
     // }
 }
 
 std::optional<std::pair<int, int>> Game::getRandomPlacablePosition()
 {
-    const auto &grid = map.getMap();
-    int width = map.getWidth();
-    int height = map.getHeight();
+    const auto& grid   = map.getMap();
+    int         width  = map.getWidth();
+    int         height = map.getHeight();
 
     std::vector<std::pair<int, int>> validPositions;
 
@@ -189,10 +166,8 @@ std::optional<std::pair<int, int>> Game::getRandomPlacablePosition()
     {
         for (int x = 0; x < width; ++x)
         {
-
             MapType type = grid[x][y];
-            if ((type == MapType::GRASS || type == MapType::SAND || type == MapType::FLOWER) &&
-                occupiedTiles.find({x, y}) == occupiedTiles.end())
+            if ((type == MapType::GRASS || type == MapType::SAND || type == MapType::FLOWER) && occupiedTiles.find({x, y}) == occupiedTiles.end())
             {
                 validPositions.emplace_back(x, y);
             }
@@ -204,14 +179,14 @@ std::optional<std::pair<int, int>> Game::getRandomPlacablePosition()
         return std::nullopt;
     }
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::random_device              rd;
+    std::mt19937                    gen(rd());
     std::uniform_int_distribution<> dis(0, validPositions.size() - 1);
 
     return validPositions[dis(gen)];
 }
 
-void Game::placeEntityRandomly(Entity *entity)
+void Game::placeEntityRandomly(Entity* entity)
 {
     auto positionOpt = getRandomPlacablePosition();
     if (!positionOpt.has_value())
@@ -246,12 +221,12 @@ void Game::updateFlowField()
     flowField.computeFlowField(px, py, map);
 }
 
-void Game::updateEntities(float deltaTime)
+void Game::updateEntities()
 {
-    for (auto &entity : entities)
+    for (auto& entity : entities)
     {
         entity->decideBehavior(player);
-        entity->update(deltaTime);
+        entity->update();
     }
 }
 

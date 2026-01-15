@@ -1,33 +1,37 @@
 #include "boar.hpp"
 #include "utils/entityType.hpp"
+// #include <cmath>
 
 Boar::Boar(float startX, float startY) : Entity(startX, startY)
 {
     speed = 1.2f;
-    type = EntityType::BOAR;
+    type  = EntityType::BOAR;
 }
 
-Boar::Boar(float startX, float startY, const Player *player, const FlowField *flowField)
+Boar::Boar(float startX, float startY, const Player* player, const FlowField* flowField)
     : Entity(startX, startY)
 {
-    this->player = player;
+    this->player    = player;
     this->flowField = flowField;
-    speed = 1.2f;
-        type = EntityType::BOAR;
-
+    speed           = 1.2f;
+    type            = EntityType::BOAR;
 }
 
-void Boar::decideBehavior(Player &player)
+void Boar::decideBehavior(Player& player)
 {
     float dx = player.getX() - x;
     float dy = player.getY() - y;
-    float distanceSq = std::sqrt(dx * dx + dy * dy);
 
-    if (distanceSq < 0.5f)
+    // On reste au carré (Square Distance)
+    float distSq = (dx * dx) + (dy * dy);
+
+    // 0.5f au carré = 0.25f
+    if (distSq < 0.25f)
     {
         player.kill();
     }
-    else if (distanceSq < pursuitRange)
+    // pursuitRange au carré (à calculer une fois idéalement)
+    else if (distSq < (pursuitRange * pursuitRange))
     {
         behavior = BehaviorType::ATTACK;
     }
@@ -39,47 +43,47 @@ void Boar::decideBehavior(Player &player)
 
 void Boar::update()
 {
-    if (!flowField || !isAlive())
-    {
-        return;
-    }
+    // if (!flowField || !isAlive())
+    // {
+    //     return;
+    // }
 
-    switch (behavior)
-    {
-    case BehaviorType::ATTACK:
-    {
-        int tileX = getTileX();
-        int tileY = getTileY();
-        float dirX = 0.0f, dirY = 0.0f;
+    // switch (behavior)
+    // {
+    // case BehaviorType::ATTACK:
+    // {
+    //     int   tileX = getTileX();
+    //     int   tileY = getTileY();
+    //     float dirX = 0.0f, dirY = 0.0f;
 
-        flowField->getDirectionAt(tileX, tileY, dirX, dirY);
+    //     flowField->getDirectionAt(tileX, tileY, dirX, dirY);
 
-        float length = std::sqrt(dirX * dirX + dirY * dirY);
-        if (length > 0.0f)
-        {
-            dirX /= length;
-            dirY /= length;
+    //     float length = std::sqrt(dirX * dirX + dirY * dirY);
+    //     if (length > 0.0f)
+    //     {
+    //         dirX /= length;
+    //         dirY /= length;
 
     //         x += dirX * speed;
     //         y += dirY * speed;
 
-            calculateDirection(dirX, dirY);
-        }
-        break;
-    }
-    case BehaviorType::IDLE:
-    {
-        calculateDirection(0, 0);
+    //         calculateDirection(dirX, dirY);
+    //     }
+    //     break;
+    // }
+    // case BehaviorType::IDLE:
+    // {
+    //     calculateDirection(0, 0);
 
-        break;
-    }
-    case BehaviorType::FLEE:
-    {
-        break;
-    }
-    case BehaviorType::MOVE:
-    {
-        break;
-    }
-    }
+    //     break;
+    // }
+    // case BehaviorType::FLEE:
+    // {
+    //     break;
+    // }
+    // case BehaviorType::MOVE:
+    // {
+    //     break;
+    // }
+    // }
 }

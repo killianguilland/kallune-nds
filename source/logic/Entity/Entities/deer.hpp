@@ -1,11 +1,9 @@
 #pragma once
-#include "../../Player/player.hpp"
 #include "../../Flowfield/flowfield.hpp"
+#include "../../Player/player.hpp"
 #include "../entity.hpp"
-#include <cmath>
 
-class Deer : public Entity
-{
+class Deer : public Entity {
 public:
     Deer(float startX, float startY);
     Deer(float startX, float startY, const Player* player, const FlowField* flowField);

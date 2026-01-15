@@ -9,7 +9,7 @@ using namespace std;
 class Map
 {
 public:
-    Map();
+    Map(int waterValue, int sizeValue, int typeValue);
 
     vector<vector<float>> getSpeedMap() const;
 
@@ -23,6 +23,8 @@ public:
     bool isWalkable(int tileX, int tileY);
 
     void changeTile(int tileX, int tileY, MapType newType);
+    // void init();
+
 private:
     vector<vector<MapType>> map;
     int width;

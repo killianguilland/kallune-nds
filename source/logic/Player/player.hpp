@@ -9,7 +9,7 @@ class Player
 public:
     Player(float startX, float startY, Map& map);
 
-    void move(float dirX, float dirY, float deltaTime);
+    void move(int32_t dirX, int32_t dirY);
     void takeDamage(float amount);
 
     void setPosition(float newX, float newY);
@@ -37,7 +37,7 @@ public:
     bool mine();  
     bool canMine() const;
 
-    void update(float deltaTime);
+    void update();
 
     void setDirection(Direction newDirection);
 private:

@@ -2,3 +2,5 @@
 build/
 audio_source/
 .vscode/
+*.nds
+*.elf

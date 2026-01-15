@@ -1,0 +1,22 @@
+CompileFlags:
+  Add: [
+    "-I<REPLACE_WITH_YOUR_DEVKITPRO_PATH>/libnds/include",
+    "-I<REPLACE_WITH_YOUR_DEVKITPRO_PATH>/calico/include",
+    "-I<REPLACE_WITH_YOUR_DEVKITPRO_PATH>/devkitARM/arm-none-eabi/include",
+    "-I<REPLACE_WITH_YOUR_DEVKITPRO_PATH>/devkitARM/arm-none-eabi/include/c++/15.1.0",
+    "-I<REPLACE_WITH_YOUR_DEVKITPRO_PATH>/devkitARM/arm-none-eabi/include/c++/15.1.0/arm-none-eabi",
+    "-I<REPLACE_WITH_YOUR_PROJECT_PATH>/include",
+    "-I<REPLACE_WITH_YOUR_PROJECT_PATH>/source",
+    "-I<REPLACE_WITH_YOUR_PROJECT_PATH>/build",
+    "-DARM9",
+    "-D__NDS__",
+    "--target=arm-none-eabi",
+    "-marm",
+    "-march=armv5te",
+    "--sysroot=<REPLACE_WITH_YOUR_DEVKITPRO_PATH>/devkitARM/arm-none-eabi",
+    "-nostdinc++"
+  ]
+  Compiler: <REPLACE_WITH_YOUR_DEVKITPRO_PATH>/devkitARM/bin/arm-none-eabi-g++
+
+Diagnostics:
+  Suppress: ["include_cleaner_no_header_found"]

@@ -1,90 +1,67 @@
 #include "button.hpp"
-#include <stdexcept>
-#include <stdio.h>
 
-// Offset global pour la VRAM des tiles
-int currentTileOffset = 0;
-
-Button::Button(
-    OAMTable* oam, 
-    const int oamId,
-    const int paletteId,
-    const void * palette, 
-    const int paletteLen, 
-    const void * tiles, 
-    const int tilesLen, 
-    const int spriteSize,
-    const int positionX,
-    const int positionY,
-    int* currentTileOffset,
-    const int DMA_CHANNEL
-) 
-    : oam{oam}, 
-      oamId{oamId}, 
-      paletteId{paletteId},
-      palette{palette}, 
-      paletteLen{paletteLen}, 
-      tiles{tiles}, 
-      tilesLen{tilesLen}, 
-      spriteSize{spriteSize},
-      positionX{positionX}, 
-      positionY{positionY}
+Button::Button(int oamId, int paletteId, const void* palette, int paletteLen, const void* tiles, int tilesLen, SpriteSize size, int x, int y, OamState* oam, u16* spritePalette)
+    : oamId(oamId), paletteId(paletteId), size(size), posX(x), posY(y), oam(oam)
 {
-    tileOffset = *currentTileOffset;
+    // 1. Charger la palette dans la banque correspondante
+    dmaCopyHalfWords(3, palette, &spritePalette[paletteId * 16], paletteLen);
 
-    // --- Copier la palette ---
-    dmaCopyHalfWords(
-        DMA_CHANNEL, 
-        palette, 
-        &SPRITE_PALETTE[paletteId * 16], 
-        paletteLen
-    );
+    // 2. Allouer de la mémoire VRAM pour la frame NORMALE
+    gfxNormal = oamAllocateGfx(oam, size, SpriteColorFormat_16Color);
 
-    // --- Copier les tiles à l'offset courant ---
-    dmaCopyHalfWords(
-        DMA_CHANNEL, 
-        tiles, 
-        SPRITE_GFX + tileOffset, 
-        tilesLen
-    );
+    // 3. Allouer de la mémoire VRAM pour la frame HOVER
+    gfxHover = oamAllocateGfx(oam, size, SpriteColorFormat_16Color);
 
-    // Calcul de l’index de tile
-    int tileIndex = tileOffset / 16;
+    // 4. Copier les données. On divise tilesLen par 2 car on a 2 frames dans le fichier.
+    int bytesPerFrame = tilesLen / 2;
 
-    fprintf(stderr, "Button %d: tileOffset=%d, tileIndex=%d\n", oamId, tileOffset, tileIndex);
+    // Copie de la première moitié du fichier (Normal)
+    dmaCopyHalfWords(3, tiles, gfxNormal, bytesPerFrame);
 
-    // --- Configurer le sprite ---
-    sprite = &oam->oamBuffer[oamId];
-    sprite->attribute[0] = ATTR0_COLOR_16 | ATTR0_SQUARE | positionY;
-
-    switch (spriteSize) {
-        case 8:  sprite->attribute[1] = ATTR1_SIZE_8  | positionX; break;
-        case 16: sprite->attribute[1] = ATTR1_SIZE_16 | positionX; break;
-        case 32: sprite->attribute[1] = ATTR1_SIZE_32 | positionX; break;
-        case 64: sprite->attribute[1] = ATTR1_SIZE_64 | positionX; break;
-        default:
-            fprintf(stderr, "Invalid sprite size: %d\n", spriteSize);
-    }
-
-    sprite->attribute[2] = tileIndex | ATTR2_PRIORITY(0) | ATTR2_PALETTE(paletteId);
-
-    // Debug
-    fprintf(stderr, "Button %d loaded (tileIndex=%d, offset=%d)\n", oamId, tileIndex, *currentTileOffset);
-
-    // --- Incrémenter l'offset global pour le prochain sprite ---
-    *currentTileOffset += tilesLen / 2; // halfwords
+    // Copie de la deuxième moitié du fichier (Hover)
+    dmaCopyHalfWords(3, (u8*)tiles + bytesPerFrame, gfxHover, bytesPerFrame);
 }
 
-void Button::draw(ButtonState state) {
-    if(state == ButtonState::HOVER) {
-        int tilesAcross = spriteSize / 8;
-        int tilesPerSprite = tilesAcross * tilesAcross; // (spriteSize/8)^2
-        sprite->attribute[2] = (tileOffset / 16 + tilesPerSprite)
-                            | ATTR2_PRIORITY(0)
-                            | ATTR2_PALETTE(paletteId);  // use palette 0
-    } else {
-        sprite->attribute[2] = (tileOffset / 16)
-                            | ATTR2_PRIORITY(0)
-                            | ATTR2_PALETTE(paletteId);  // use palette 0
-    }
+void Button::draw(ButtonState state)
+{
+    this->render(false, state);
+}
+
+void Button::hide()
+{
+    this->render(true, ButtonState::DEFAULT);
+}
+
+void Button::render(bool isHidden, ButtonState state)
+{
+    // On choisit le pointeur VRAM en fonction de l'état
+    u16* currentGfx = (state == ButtonState::HOVER) ? gfxHover : gfxNormal;
+
+    oamSet(oam, oamId, posX, posY,
+           0,         // Priorité (0-3)
+           paletteId, // Index de la palette (0-15)
+           size, SpriteColorFormat_16Color,
+           currentGfx, // Le pointeur magique alloué
+           -1, false, isHidden, false, false, false);
+}
+
+void Button::updateGraphics(const void* tiles, int tilesLen, const void* palette, int paletteLen)
+{
+    // 1. Mise à jour des tuiles (VRAM)
+    int bytesPerFrame = tilesLen / 2;
+    dmaCopyHalfWords(3, tiles, gfxNormal, bytesPerFrame);
+    dmaCopyHalfWords(3, (u8*)tiles + bytesPerFrame, gfxHover, bytesPerFrame);
+
+    // 2. Mise à jour de la palette (RAM Palette)
+    // On calcule l'adresse de départ : paletteId * 16 couleurs
+    dmaCopyHalfWords(3, palette, &SPRITE_PALETTE[this->paletteId * 16], paletteLen);
+}
+
+Button::~Button()
+{
+    // Libère la mémoire VRAM pour que d'autres puissent l'utiliser
+    if (gfxNormal)
+        oamFreeGfx(oam, gfxNormal);
+    if (gfxHover)
+        oamFreeGfx(oam, gfxHover);
 }

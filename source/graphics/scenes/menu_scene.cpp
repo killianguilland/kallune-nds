@@ -1,7 +1,8 @@
 #include "menu_scene.hpp"
 #include <graphics/elements/oam.hpp>
 #include "graphics/hardware.hpp"
-#include "input/scenes/menu_state.hpp"
+#include "input/states/menu_state.hpp"
+#include "utils/scene.hpp"
 
 MenuScene::MenuScene(const Game* /*_*/)
 {
@@ -37,7 +38,7 @@ MenuScene::MenuScene(const Game* /*_*/)
 
 void MenuScene::draw(const Input& input)
 {
-    const MenuState* menuState = input.getMenuState();
+    const MenuState* menuState = input.getState<MenuState>();
     startButton->draw(menuState->playButton);
     settingsButton->draw(menuState->settingsButton);
 }

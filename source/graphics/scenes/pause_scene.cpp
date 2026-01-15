@@ -1,5 +1,6 @@
 #include "pause_scene.hpp"
 #include "graphics/hardware.hpp"
+#include "input/states/pause_state.hpp"
 
 PauseScene::PauseScene(const Game* /*_*/)
 {
@@ -35,7 +36,7 @@ PauseScene::PauseScene(const Game* /*_*/)
 
 void PauseScene::draw(const Input& input)
 {
-    const PauseState* pauseState = input.getPauseState();
+    const PauseState* pauseState = input.getState<PauseState>();
     exitButton->draw(pauseState->exitButton);
     playButton->draw(pauseState->returnButton);
 }

@@ -1,7 +1,8 @@
 #include "game_scene.hpp"
 #include "graphics/hardware.hpp"
 #include "input/input.hpp"
-#include "input/scenes/playing_state.hpp"
+#include "input/states/playing_state.hpp"
+#include "utils/scene.hpp"
 
 GameScene::GameScene(const Game* game) : minimap(game->map), terrain(), game(game)
 {
@@ -24,7 +25,7 @@ GameScene::GameScene(const Game* game) : minimap(game->map), terrain(), game(gam
 
 void GameScene::draw(const Input& input)
 {
-    const PlayingState* playingState = input.getPlayingState();
+    const PlayingState* playingState = input.getState<PlayingState>();
     pauseButton->draw(playingState->pauseButton);
 
     // Met à jour la position de la caméra pour suivre le joueur

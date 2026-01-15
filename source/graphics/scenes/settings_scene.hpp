@@ -21,7 +21,7 @@
 #include "graphics/elements/background.hpp"
 #include "graphics/elements/button.hpp"
 #include "graphics/scene.hpp"
-#include "input/scenes/settings_state.hpp"
+#include "input/states/settings_state.hpp"
 #include "logic/game.hpp"
 #include "utils/state.hpp"
 

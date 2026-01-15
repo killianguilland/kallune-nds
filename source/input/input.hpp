@@ -1,39 +1,40 @@
 #pragma once
-#include <array>
 
-#include "utils/scene.hpp"
-// #include "input/scenes/menu_state.hpp"
-#include "utils/state.hpp"
-#include "utils/router.hpp"
+// #include "input/states/menu_state.hpp"
 #include <nds.h>
-#include "input/scenes/menu_state.hpp"
-#include "input/scenes/playing_state.hpp"
-#include "input/scenes/settings_state.hpp"
-#include "input/scenes/pause_state.hpp"
-#include "input/scenes/end_state.hpp"
-#include "logic/game.hpp"
+#include <array>
+#include "input/state.hpp"
+#include "input/states/end_state.hpp"
+#include "input/states/menu_state.hpp"
+#include "input/states/pause_state.hpp"
+#include "input/states/playing_state.hpp"
+#include "input/states/settings_state.hpp"
+#include "utils/router.hpp"
+#include "utils/state.hpp"
 
 class Input {
-
 private:
-    MenuState* menu_state;
-    SettingsState* settings_state;
-    PauseState* pause_state;
-    PlayingState* playing_state;
-    EndState* end_state;
+    // Le tableau qui contient physiquement les instances
+    std::array<StateInterface*, static_cast<size_t>(Scene::COUNT)> states;
+
+    // Un pointeur "volant" qui pointe vers l'état actif dans le tableau ci-dessus
+    StateInterface* currentState = nullptr;
 
 public:
+    InputState state;
     Input();
-    void update(Game* game, Router* router);
+    ~Input(); // Important pour libérer les instances à la fin
 
-    // Read-only getters for states
-    const MenuState* getMenuState() const { return menu_state; }
-    const PlayingState* getPlayingState() const { return playing_state; }
-    const SettingsState* getSettingsState() const { return settings_state; }
-    const PauseState* getPauseState() const { return pause_state; }
-    const EndState* getEndState() const { return end_state; }
+    void update(Router* router);
 
-    InputState state {InputState()};
+    // Toujours notre getter magique
+    template<typename T>
 
+    auto getState() const -> T*
+    {
+        // Le compilateur récupère l'index directement depuis le type T !
+        size_t index = static_cast<size_t>(T::scene_type);
 
+        return static_cast<T*>(states[index]);
+    }
 };

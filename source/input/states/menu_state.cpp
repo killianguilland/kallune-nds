@@ -13,12 +13,12 @@ void MenuState::update(InputState state, Router* router) {
 
     if(playButton == ButtonState::ACTIVE) {
         fprintf(stderr, "Play button clicked\n");
-        router->goTo(Scene::Playing);
+        router->goTo(Scene::Loading);
     }
 
-    if(playButton == ButtonState::HOVER) {
-        // fprintf(stderr, "Play button hovered\n");
-    }
+    // if(playButton == ButtonState::HOVER) {
+    //     fprintf(stderr, "Play button hovered\n");
+    // }
 
     settingsButton = checkButtonCollision(
         state, 
@@ -33,7 +33,7 @@ void MenuState::update(InputState state, Router* router) {
         router->goTo(Scene::Settings);
     }
 
-    if(settingsButton == ButtonState::HOVER) {
-        // fprintf(stderr, "Settings button hovered\n");
-    }
+    // if(settingsButton == ButtonState::HOVER) {
+    //     fprintf(stderr, "Settings button hovered\n");
+    // }
 }

@@ -10,7 +10,7 @@
 #include "graphics/elements/background.hpp"
 #include "graphics/elements/button.hpp"
 #include "graphics/scene.hpp"
-#include "input/scenes/pause_state.hpp"
+#include "input/states/pause_state.hpp"
 #include "logic/game.hpp"
 
 class PauseScene : public SceneInterface {

@@ -1,6 +1,7 @@
 #include "loading_scene.hpp"
 #include <graphics/elements/oam.hpp>
 #include "graphics/hardware.hpp"
+#include "input/states/loading_state.hpp"
 
 LoadingScene::LoadingScene(const Game* /*_*/)
 {
@@ -12,6 +13,7 @@ LoadingScene::LoadingScene(const Game* /*_*/)
 
 void LoadingScene::draw(const Input& input)
 {
+    const LoadingState* loadingState = input.getState<LoadingState>();
 }
 void LoadingScene::postRender()
 {

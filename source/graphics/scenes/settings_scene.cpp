@@ -1,6 +1,6 @@
 #include "settings_scene.hpp"
 #include "graphics/hardware.hpp"
-#include "input/scenes/settings_state.hpp"
+#include "input/states/settings_state.hpp"
 
 // 1. Table des pointeurs vers les palettes générées par grit
 const unsigned short* waterPals[] = {
@@ -74,7 +74,7 @@ SettingsScene::SettingsScene(const Game* /*_*/)
 
 void SettingsScene::draw(const Input& input)
 {
-    const SettingsState* settingsState = input.getSettingsState();
+    const SettingsState* settingsState = input.getState<SettingsState>();
     returnButton->draw(settingsState->returnButton);
 
     if (settingsState->waterValue != lastWater)

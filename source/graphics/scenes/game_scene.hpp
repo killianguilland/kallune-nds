@@ -9,7 +9,7 @@
 #include "graphics/elements/minimap.hpp"
 #include "graphics/elements/terrain.hpp"
 #include "graphics/scene.hpp"
-#include "input/scenes/playing_state.hpp"
+#include "input/states/playing_state.hpp"
 #include "logic/game.hpp"
 
 class GameScene : public SceneInterface {

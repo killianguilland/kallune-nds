@@ -1,6 +1,7 @@
 #include "end_scene.hpp"
 #include "graphics/hardware.hpp"
-#include "input/scenes/end_state.hpp"
+#include "input/states/end_state.hpp"
+#include "utils/scene.hpp"
 
 static const int DMA_CHANNEL = 3;
 
@@ -26,7 +27,7 @@ EndScene::EndScene(const Game* /*game*/)
 
 void EndScene::draw(const Input& input)
 {
-    const EndState* endState = input.getEndState();
+    const EndState* endState = input.getState<EndState>();
     okButton->draw(endState->exitButton);
 }
 

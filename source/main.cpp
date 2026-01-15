@@ -13,8 +13,8 @@ int main()
 	fprintf(stderr, "Starting game...\n");
 	Router router{Router()};
 	fprintf(stderr, "Router initialized to scene: %d\n", router.currentScene);
-	Game* game = new Game();
-	fprintf(stderr, "Game initialized\n");
+	Game* game {nullptr};
+	// fprintf(stderr, "Game initialized\n");
 	Graphics graphics{Graphics()};
 	fprintf(stderr, "Graphics initialized\n");
 	Input input{Input()};
@@ -29,26 +29,36 @@ int main()
 
 	bool shouldClose = false;
 
+	// int frames = 0;
+    // int fps = 0;
+    
+    // Start a timer (Timer 0) at 60Hz frequency to track time
+    // timerStart(0, ClockDivider_1024, (u16)TIMER_FREQ_1024(1), NULL);
+
 	while (!shouldClose)
 	{
-		if (router.currentScene == Scene::End && !game->isPlayerAlive()) {
+		// frames++;
+		if (router.currentScene == Scene::Loading) {
 			delete game;
-			game = new Game();
+			const SettingsState* settings = input.getSettingsState();
+			game = new Game(settings->waterValue, settings->sizeValue, settings->typeValue);
+			router.goTo(Scene::Playing);
 		}
 
-		double deltaTime = 1.0 / 60.0; // Placeholder for actual frame time calculation
-
-		input.update(game, &router);
+		input.update(&router);
 		if (router.currentScene == Scene::Playing)
 		{
-			// game->update(deltaTime, input.state);
+			game->update(input.state);
+			if (game != nullptr && !game->isPlayerAlive()) router.goTo(Scene::End);
 		}
-		// graphics.update(deltaTime, *game, input.state, &router);
-		graphics.render(deltaTime, &router, input, *game);
+		graphics.render(&router, input, game);
 
 		swiWaitForVBlank();
-		graphics.postRender();
+		graphics.postRender(&router);
 		router.update();
+
+		// fflush(stderr);
+		// fprintf(stderr, "FPS: %d   \n", fps);
 	}
 
 	fprintf(stderr, "Exiting main loop...\n");

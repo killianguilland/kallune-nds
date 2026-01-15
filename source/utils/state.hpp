@@ -4,6 +4,9 @@
 struct InputState {
     touchPosition touch;
     touchPosition lastTouch;
+    u32 keys {};
+    int moveX {0};
+    int moveY {0};
     bool touching {false};
     bool wasTouching {false};
     bool touchUp {false};

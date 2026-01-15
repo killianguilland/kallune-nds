@@ -3,7 +3,9 @@
 enum Scene {
     Menu,
     Settings,
+    Loading,
     Playing,
+    Pause,
     End,
-    Pause
+    COUNT
 };

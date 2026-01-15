@@ -1,45 +1,68 @@
-# Kallune (port Nintendo DS)
+# Kallune (Nintendo DS Port)
 
-Petit port Nintendo DS du jeu Kallune, compilé avec devkitPro / devkitARM.
+A Nintendo DS port of the isometric game **Kallune**, built using the **devkitPro** / **devkitARM** toolchain.
 
-## Installation et compilation
+---
 
-Prérequis
-- devkitPro (incluant devkitARM) installé sur votre machine. Voir https://devkitpro.org
-- Les outils fournis par devkitPro (grit, mmutil, bin2o) sont utilisés par le Makefile.
+## 🛠 Prerequisites
 
-Installation et compilation rapide
-1. Installez devkitPro / devkitARM selon la documentation officielle.
-2. Dans votre shell (zsh), exportez la variable d'environnement utilisée par le Makefile :
+To compile this project, you need the following tools installed on your system:
 
-	export DEVKITPRO=/chemin/vers/devkitPro
-	export DEVKITARM=$DEVKITPRO/devkitARM
+* **devkitPro**: The core homebrew development suite.
+* **devkitARM**: The ARM compiler provided by devkitPro.
+* **Homebrew Tools**: The build system uses `grit` (graphics), `mmutil` (audio), and `bin2o` (binary conversion), all included in the devkitPro installation.
 
-3. À la racine du dépôt, lancez la compilation :
+For installation instructions, visit [devkitpro.org](https://devkitpro.org).
 
-	make
+---
 
-Le Makefile s'appuie sur les règles de `ds_rules` (fourni par devkitARM). Si tout est configuré, cela produira un fichier `.nds` exécutable.
+## 🚀 Building the Project
 
-Notes
-- Ce projet utilise la toolchain de devkitPro pour convertir les graphismes et l'audio (grit, maxmod/mmutil, bin2o).
-- Pour tester la ROM (melon / no$gba), utilisez un émulateur NDS compatible ou bien tout simplement une console Nintendo DS.
+### 1. Environment Configuration
+Ensure your environment variables are correctly exported in your shell (e.g., `.zshrc` or `.bashrc`). These paths allow the `Makefile` to find the necessary tools.
 
-## Organisation du code
+```bash
+export DEVKITPRO=/opt/devkitpro
+export DEVKITARM=$DEVKITPRO/devkitARM
+```
 
-- `gfx/` : ressources graphiques et audio.
-- `source/` : code source C++ du jeu.
-- `source/graphics/` : gestion des graphismes.
-- `source/sounds/` : gestion de l'audio.
-- `source/logic/` : logique du jeu.
-- `source/input/` : gestion des entrées utilisateur.
-- `source/utils/` : utilitaires divers.
-- `source/main.cpp` : point d'entrée principal.
-- `Makefile` : script de compilation.
+### 2. Compilation
+Navigate to the root of the repository and run the build command:
 
-## Crédits
+```bash
+make
+```
 
-Port réalisé à partir du [code source de Kallune](https://github.com/guillaume-tritsch/Kallune.git) pour la Nintendo DS. 
-Code original par @guillaume-tritsch / @BQuent1 / @killianguilland.
+The Makefile utilizes `ds_rules` (provided by devkitARM). Upon successful compilation, an executable `.nds` file will be generated in the root directory.
 
-Avec des assets graphiques CC BY 4.0 créés par [scrabling](https://scrabling.itch.io/pixel-isometric-tiles).
+### 3. Running the Game
+* Emulator: I recommend using [melonDS](https://melonds.kuribo64.net/) (which was more accurate during my tests) or [No$GBA](https://problemkaputt.de/gba.htm) (which has awesome debugging features) for testing the game on your computer.
+* Real hardware: You can also run the game on actual Nintendo DS by transfering the `.nds` file to a compatible flashcart.
+
+---
+
+## 📂 Code structure
+* **`gfx/`**: graphical assets.
+* **`audio/`**: audio assets.
+* **`source/`**: C++ game source code.
+	* **`/main.cpp`**: main entry point.
+	* **`/logic/`**: game logic.
+	* **`/graphics/`**: graphics management (extensible scene system).
+	* **`/input/`**: user input management (extensible state system).
+	* **`/sounds/`**: audio management.
+	* **`/utils/`**: miscellaneous utilities.
+* **`Makefile`**: build script.
+
+---
+
+## 📜 Credits
+
+This port is based on the original [Kallune source code](https://github.com/guillaume-tritsch/Kallune.git).
+
+**Original Developers:**
+* [@guillaume-tritsch](https://github.com/guillaume-tritsch)
+* [@BQuent1](https://github.com/BQuent1)
+* [@killianguilland](https://github.com/killianguilland)
+
+**Assets:**
+* Isometric Pixel Art Tileset by [scrabling](https://scrabling.itch.io/pixel-isometric-tiles) (Licensed under **CC BY 4.0**).

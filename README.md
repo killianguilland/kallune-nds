@@ -1,9 +1,5 @@
 # Kallune (Nintendo DS Port)
 
-A Nintendo DS port of the isometric game **Kallune**, built using the **devkitPro** / **devkitARM** toolchain.
-
----
-
 ## 🛠 Prerequisites
 
 To compile this project, you need the following tools installed on your system:
@@ -13,8 +9,6 @@ To compile this project, you need the following tools installed on your system:
 * **Homebrew Tools**: The build system uses `grit` (graphics), `mmutil` (audio), and `bin2o` (binary conversion), all included in the devkitPro installation.
 
 For installation instructions, visit [devkitpro.org](https://devkitpro.org).
-
----
 
 ## 🚀 Building the Project
 
@@ -39,21 +33,17 @@ The Makefile utilizes `ds_rules` (provided by devkitARM). Upon successful compil
 * Emulator: I recommend using [melonDS](https://melonds.kuribo64.net/) (which was more accurate during my tests) or [No$GBA](https://problemkaputt.de/gba.htm) (which has awesome debugging features) for testing the game on your computer.
 * Real hardware: You can also run the game on actual Nintendo DS by transfering the `.nds` file to a compatible flashcart.
 
----
-
 ## 📂 Code structure
-* **`gfx/`**: graphical assets.
-* **`audio/`**: audio assets.
-* **`source/`**: C++ game source code.
-	* **`/main.cpp`**: main entry point.
-	* **`/logic/`**: game logic.
-	* **`/graphics/`**: graphics management (extensible scene system).
-	* **`/input/`**: user input management (extensible state system).
-	* **`/sounds/`**: audio management.
-	* **`/utils/`**: miscellaneous utilities.
-* **`Makefile`**: build script.
-
----
+* `gfx/` graphical assets.
+* `audio/` audio assets.
+* `source/` C++ game source code.
+	* `main.cpp` main entry point.
+	* `logic/` game logic.
+	* `graphics/` graphics management (extensible scene system).
+	* `input/` user input management (extensible state system).
+	* `sounds/` audio management.
+	* `utils/` miscellaneous utilities.
+* `Makefile` build script.
 
 ## 📜 Credits
 
@@ -65,4 +55,5 @@ This port is based on the original [Kallune source code](https://github.com/guil
 * [@killianguilland](https://github.com/killianguilland)
 
 **Assets:**
-* Isometric Pixel Art Tileset by [scrabling](https://scrabling.itch.io/pixel-isometric-tiles) (Licensed under **CC BY 4.0**).
+* Tileset by [scrabling](https://scrabling.itch.io/pixel-isometric-tiles) (Licensed under **CC BY 4.0**).
+* Most UI assets made by myself using Figma.

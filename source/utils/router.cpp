@@ -1,5 +1,5 @@
 #include "router.hpp"
-#include <stdio.h>
+#include <cstdio>
 
 void Router::goTo(Scene scene)
 {

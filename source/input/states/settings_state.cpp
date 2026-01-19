@@ -1,5 +1,5 @@
 #include "settings_state.hpp"
-#include <stdio.h>
+#include <cstdio>
 
 void SettingsState::update(InputState state, Router* router) {
     returnButton = checkButtonCollision(

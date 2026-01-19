@@ -1,5 +1,5 @@
 #include "menu_state.hpp"
-#include <stdio.h>
+#include <cstdio>
 
 void MenuState::update(InputState state, Router* router) {
     

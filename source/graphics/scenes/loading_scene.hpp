@@ -2,7 +2,7 @@
 #include <loadingBottom.h>
 #include <loadingTop.h>
 #include <nds.h>
-#include <stdio.h>
+#include <cstdio>
 
 // #include "graphics/elements/animatedSprite.hpp"
 #include "graphics/elements/background.hpp"

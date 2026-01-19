@@ -1,5 +1,5 @@
 #include "game.hpp"
-#include <stdio.h>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <optional>

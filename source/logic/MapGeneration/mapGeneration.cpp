@@ -1,8 +1,8 @@
 #include "mapGeneration.hpp"
+#include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
-#include <algorithm>
-#include <stdio.h>
 
 void MapGeneration::printMap()
 {

@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include "graphics/graphics.hpp"
 #include "input/input.hpp"
 #include "input/states/settings_state.hpp"

@@ -1,5 +1,5 @@
 #include "state.hpp"
-#include <stdio.h>
+#include <cstdio>
 
 ButtonState checkButtonCollision(InputState state, int posX, int posY, int sizeX, int sizeY)
 {

@@ -4,7 +4,7 @@
 #include <nds.h>
 #include <settingsButton.h>
 #include <startButton.h>
-#include <stdio.h>
+#include <cstdio>
 
 // #include "graphics/elements/animatedSprite.hpp"
 #include "graphics/elements/background.hpp"

@@ -1,7 +1,7 @@
 #include "player.hpp"
 #include <nds.h>
-#include <stdio.h>
 #include <cmath>
+#include <cstdio>
 #include <logic/Map/map.hpp>
 #include "utils/behavior.hpp"
 #include "utils/directions.hpp"

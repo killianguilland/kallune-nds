@@ -10,6 +10,7 @@ private:
     u16* fullMapBuffer{nullptr};
     u16* playerSpriteGfx{nullptr};
     void safePlot(int x, int y, u16 color);
+    int  mapWidth{};
 
 public:
     Minimap(const Map& mapgen);

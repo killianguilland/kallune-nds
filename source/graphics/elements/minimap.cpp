@@ -109,8 +109,8 @@ Minimap::Minimap(const Map& mapgen)
         }
     }
 
-    const auto& map      = mapgen.getMap();
-    int         mapWidth = mapgen.getWidth();
+    const auto& map = mapgen.getMap();
+    mapWidth        = mapgen.getWidth();
 
     // On centre le dessin dans notre buffer de 512x256
     int offsetX = BUF_W / 2 - 1;
@@ -158,9 +158,12 @@ void Minimap::draw(int playerX, int playerY)
 
     u16* vramBase = (u16*)BG_BMP_RAM_SUB(0);
 
+    const int isoPlayerX = (playerX - playerY);
+    const int isoPlayerY = (playerX + playerY) + (120 - mapWidth);
+
     // 1. CALCUL DE LA FENÊTRE (Scrolling)
-    int viewX = (playerX - playerY) * 2 + (BUF_W / 2) - 128;
-    int viewY = (playerX + playerY) + 20 - 96;
+    int viewX = isoPlayerX * 2 + (BUF_W / 2) - 128;
+    int viewY = isoPlayerY + 20 - 96 /*- (BUF_H / 2 - mapWidth) */;
 
     // Bornes de l'écran (sous-fenêtre de la minimap)
     const int minY = 16;
@@ -206,8 +209,8 @@ void Minimap::draw(int playerX, int playerY)
     // 3. MISE À JOUR DU SPRITE JOUEUR
     if (this->playerSpriteGfx != nullptr)
     {
-        int absX = (playerX - playerY) * 2 + (BUF_W / 2);
-        int absY = (playerX + playerY) + 20;
+        int absX = isoPlayerX * 2 + (BUF_W / 2);
+        int absY = isoPlayerY + 8 /*+ (BUF_H / 2 - mapWidth)*/;
 
         int screenX = absX - viewX;
         int screenY = absY - viewY;

@@ -1,23 +1,79 @@
 #include "terrain.hpp"
 #include <array>
 
-// Tableau de correspondance MapType -> Span-List
-static const std::array<SpanTile, 6> terrainTilesTable = {{
-    {tile_104_offsets, tile_104_data}, // Water
-    {tile_061_offsets, tile_061_data}, // Sand
-    {tile_024_offsets, tile_024_data}, // Grass
-    {tile_000_offsets, tile_000_data}, // Wall
-    {tile_104_offsets, tile_104_data}, // Flower
-    {tile_025_offsets, tile_025_data}, // Solid Wall
-}};
 
-static const std::array<int, 6> terrainTilesOffset = {{
-    0,  // Water
-    0,  // Sand
-    0,  // Grass
-    5,  // Wall
-    0,  // Flower
-    10, // Solid Wall
+// Base Tiles
+static const SpanTile tile104 = {tile_104_offsets, tile_104_data}; // Normal
+static const SpanTile tile105 = {tile_105_offsets, tile_105_data}; // Top
+static const SpanTile tile106 = {tile_106_offsets, tile_106_data}; // Left
+static const SpanTile tile107 = {tile_107_offsets, tile_107_data}; // Right
+static const SpanTile tile108 = {tile_108_offsets, tile_108_data}; // Bottom
+static const SpanTile tile109 = {tile_109_offsets, tile_109_data}; // Top-Left
+static const SpanTile tile110 = {tile_110_offsets, tile_110_data}; // Bottom-Right
+static const SpanTile tile111 = {tile_111_offsets, tile_111_data}; // Bottom-Left
+static const SpanTile tile112 = {tile_112_offsets, tile_112_data}; // Top-Right
+static const SpanTile tile113 = {tile_113_offsets, tile_113_data}; // Surrounded
+
+static const SpanTile* waterVariants[16] = {
+    &tile104, // 0000: Normal
+    &tile105, // 0001: Top
+    &tile108, // 0010: Bottom
+    &tile104, // 0011: Top + Bottom (Default to normal)
+    &tile106, // 0100: Left
+    &tile109, // 0101: Top + Left (TOP_LEFT)
+    &tile111, // 0110: Bottom + Left (BOTTOM_LEFT)
+    &tile106, // 0111: Top + Bottom + Left (Default to Left)
+    &tile107, // 1000: Right
+    &tile112, // 1001: Top + Right (TOP_RIGHT)
+    &tile110, // 1010: Bottom + Right (BOTTOM_RIGHT)
+    &tile107, // 1011: Top + Bottom + Right (Default to Right)
+    &tile104, // 1100: Left + Right (Default to normal)
+    &tile105, // 1101: Top + Left + Right (Default to Top)
+    &tile108, // 1110: Bottom + Left + Right (Default to Bottom)
+    &tile113  // 1111: Surrounded
+};
+
+// Wall Base Tiles
+static const SpanTile tile000 = {tile_000_offsets, tile_000_data}; // BOTTOM_LEFT
+static const SpanTile tile002 = {tile_002_offsets, tile_002_data}; // TOP_RIGHT
+static const SpanTile tile004 = {tile_004_offsets, tile_004_data}; // BOTTOM_RIGHT
+static const SpanTile tile005 = {tile_005_offsets, tile_005_data}; // TOP & TOP_LEFT
+static const SpanTile tile008 = {tile_008_offsets, tile_008_data}; // SURROUNDED
+static const SpanTile tile009 = {tile_009_offsets, tile_009_data}; // NORMAL, BOTTOM, LEFT, RIGHT
+
+static const SpanTile* wallVariants[16] = {
+    &tile009, // 0000: NORMAL
+    &tile005, // 0001: TOP
+    &tile009, // 0010: BOTTOM (Uses ID 9)
+    &tile009, // 0011: Top + Bottom (Default to 9)
+    &tile009, // 0100: LEFT (Uses ID 9)
+    &tile005, // 0101: TOP_LEFT (Uses ID 5)
+    &tile000, // 0110: BOTTOM_LEFT (Uses ID 0)
+    &tile009, // 0111: Top + Bottom + Left (Default to 9)
+    &tile009, // 1000: RIGHT (Uses ID 9)
+    &tile002, // 1001: TOP_RIGHT (Uses ID 2)
+    &tile004, // 1010: BOTTOM_RIGHT (Uses ID 4)
+    &tile009, // 1011: Top + Bottom + Right (Default to 9)
+    &tile009, // 1100: Left + Right (Default to 9)
+    &tile005, // 1101: Top + Left + Right (Default to 5)
+    &tile009, // 1110: Bottom + Left + Right (Default to 9)
+    &tile008  // 1111: SURROUNDED (Uses ID 8)
+};
+
+static const SpanTile waterBase = {tile_104_offsets, tile_104_data};
+static const SpanTile sandBase  = {tile_061_offsets, tile_061_data};
+static const SpanTile grassBase = {tile_024_offsets, tile_024_data};
+static const SpanTile wallBase  = {tile_000_offsets, tile_000_data};
+static const SpanTile solidBase = {tile_025_offsets, tile_025_data};
+
+
+static const std::array<TerrainVariation, 6> terrainTilesTable = {{
+    {&waterBase, waterVariants, 0, true}, // Water
+    {&sandBase, nullptr, 0, false},       // Sand
+    {&grassBase, nullptr, 0, false},      // Grass
+    {&wallBase, wallVariants, 5, true},   // Wall
+    {&waterBase, nullptr, 0, false},      // Flower
+    {&solidBase, nullptr, 10, false}      // Solid Wall
 }};
 
 u16 skyColor16 = RGB15(144 / 8, 216 / 8, 216 / 8) | BIT(15);
@@ -25,7 +81,7 @@ u16 skyColor16 = RGB15(144 / 8, 216 / 8, 216 / 8) | BIT(15);
 // 2. On la répète pour créer une valeur 32 bits (Pixel 1 | Pixel 2)
 u32 skyColor32 = skyColor16 | (skyColor16 << 16);
 
-const int cullingOffset = 2;
+const int cullingOffset = 1;
 
 Terrain::Terrain()
 {
@@ -136,23 +192,38 @@ void Terrain::draw(const Map& mapgen, int playerX, int playerY)
             int sY = (x + y) * 8 - fineScrollY;
 
             const MapType tileType = mapgen.at(x, y);
+            const auto&   typeData = terrainTilesTable[static_cast<int>(tileType)];
 
-            sY -= terrainTilesOffset[tileType];
+            // Start with the default tile
+            const SpanTile* tileToDraw = typeData.defaultTile;
 
-            if (sX <= -32 || sX >= 256 || sY <= -32 || sY >= 192)
-                continue;
+            // ONLY run the expensive neighbor logic if this tile type supports it
+            if (typeData.isAutotiled)
+            {
+                uint8_t mask = 0;
+                // Fast 1D neighbor checks
+                if (y > 0 && mapgen.at(x, y - 1) != tileType)
+                    mask |= 1;
+                if (y < mapSize - 1 && mapgen.at(x, y + 1) != tileType)
+                    mask |= 2;
+                if (x > 0 && mapgen.at(x - 1, y) != tileType)
+                    mask |= 4;
+                if (x < mapSize - 1 && mapgen.at(x + 1, y) != tileType)
+                    mask |= 8;
 
-            const SpanTile& tile = terrainTilesTable[tileType];
+                tileToDraw = typeData.variations[mask];
+            }
 
-            // --- DETECTION DU FAST PATH ---
-            // Si la tuile est entre X[0-224] et Y[0-160], elle ne nécessite aucun clipping
+            sY -= typeData.heightOffset;
+
+            // Now call your render function with tileToDraw
             if (sX >= 0 && sX <= 224 && sY >= 0 && sY <= 160)
             {
-                renderSpanTile(tile, sX, sY, false); // Version sans clipping
+                renderSpanTile(*tileToDraw, sX, sY, false);
             }
             else
             {
-                renderSpanTile(tile, sX, sY, true); // Version avec clipping
+                renderSpanTile(*tileToDraw, sX, sY, true);
             }
         }
     }

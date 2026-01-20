@@ -1,7 +1,6 @@
 #include "terrain.hpp"
+#include <array>
 
-// On suppose que tes fichiers grit sont inclus ici
-// #include "all_tiles.h"
 
 Terrain::Terrain()
 {
@@ -14,7 +13,7 @@ Terrain::Terrain()
 
 void Terrain::draw(const Map& mapgen, int camX, int camY)
 {
-    // 1. Effacement rapide avec DMA
+    // Effacement rapide avec DMA
     dmaFillWords(RGB15(0, 0, 0) | BIT(15), this->currentWritingBuffer, 256 * 192 * 2);
 
     const std::vector<std::vector<MapType>>& map     = mapgen.getMap();
@@ -23,8 +22,8 @@ void Terrain::draw(const Map& mapgen, int camX, int camY)
     int isoScrollX = (camX - camY) * 16;
     int isoScrollY = (camX + camY) * 8;
 
-    // 2. Culling amélioré : On calcule les bornes une seule fois
-    int range       = 10; // Nombre de cases affichées autour du centre
+    // Culling par grille (Losange)
+    int range       = 10;
     int startX_grid = camX - range;
     int endX_grid   = camX + range;
     int startY_grid = camY - range;
@@ -44,86 +43,112 @@ void Terrain::draw(const Map& mapgen, int camX, int camY)
     {
         for (int x = startX_grid; x < endX_grid; x++)
         {
-            // On calcule la position écran relative au centre isométrique
+            // Position écran relative au centre
             int screenX = (x - y) * 16 - isoScrollX + 128;
-            int screenY = (x + y) * 8 - isoScrollY + 96 - 16; // 96 pour centrer en Y
+            int screenY = (x + y) * 8 - isoScrollY + 96 - 16;
 
             // Culling tuile entière
             if (screenX < -32 || screenX >= 256 || screenY < -32 || screenY >= 192)
                 continue;
 
-            // 4. Choix du graphisme (Remplace par ton tableau terrainTilesTable pour plus de vitesse)
-
+            // Choix du graphisme (Bitmap brut)
             const u16* tileGfx = nullptr;
 
             switch (map[x][y])
             {
-            case MapType::WALL:
-                tileGfx = reinterpret_cast<const u16*>(tile000Bitmap);
-                break;
-
-            case MapType::GRASS:
-                tileGfx = reinterpret_cast<const u16*>(tile037Bitmap);
-                break;
-
-            case MapType::WATER:
-                tileGfx = reinterpret_cast<const u16*>(tile104Bitmap);
-                break;
-
-            case MapType::SOLID_WALL:
-                tileGfx = reinterpret_cast<const u16*>(tile025Bitmap);
-                break;
-
-            case MapType::SAND:
-                tileGfx = reinterpret_cast<const u16*>(tile061Bitmap);
-                break;
-
-            case MapType::FLOWER:
-                tileGfx = reinterpret_cast<const u16*>(tile104Bitmap);
-                break;
+            case MapType::WALL: tileGfx = (u16*)tile000Bitmap; break;
+            case MapType::GRASS: tileGfx = (u16*)tile037Bitmap; break;
+            case MapType::WATER: tileGfx = (u16*)tile104Bitmap; break;
+            case MapType::SOLID_WALL: tileGfx = (u16*)tile025Bitmap; break;
+            case MapType::SAND: tileGfx = (u16*)tile061Bitmap; break;
+            case MapType::FLOWER: tileGfx = (u16*)tile104Bitmap; break;
+            default: continue;
             }
 
-            // 5. Dessin optimisé 32 bits
+            // Rendu Bitmap avec test de transparence (p1 == 0x8000 ou bit 15)
             for (int l = 0; l < 32; l++)
             {
                 int drawY = screenY + l;
                 if (drawY < 0 || drawY >= 192)
                     continue;
 
-                // On pré-calcule l'adresse de la ligne dans le buffer de destination
                 u16*       dstLine = &this->currentWritingBuffer[drawY * 256 + screenX];
                 const u16* srcLine = &tileGfx[l * 32];
 
-                // Boucle de colonnes par pas de 2 pixels (32 bits)
                 for (int c = 0; c < 32; c += 2)
                 {
                     int currentX = screenX + c;
 
-                    // Clipping horizontal rapide
+                    // Clipping horizontal simple
                     if (currentX < 0 || currentX >= 255)
                         continue;
 
-                    // --- MAGIE DU 32 BITS ---
-                    // On lit 2 pixels d'un coup (u32)
+                    // Lecture 32 bits (2 pixels)
                     u32 chunk = *(u32*)&srcLine[c];
+                    u16 p1    = chunk & 0xFFFF;
+                    u16 p2    = chunk >> 16;
 
-                    // Extraction des deux pixels
-                    u16 p1 = chunk & 0xFFFF;
-                    u16 p2 = chunk >> 16;
-
-                    // Test de transparence pour le pixel 1
+                    // Test pixel 1
                     if (!(p1 == 0x8000 || !(p1 & BIT(15))))
                     {
                         dstLine[c] = p1;
                     }
 
-                    // Test de transparence pour le pixel 2
+                    // Test pixel 2
                     if (!(p2 == 0x8000 || !(p2 & BIT(15))))
                     {
                         dstLine[c + 1] = p2;
                     }
                 }
             }
+        }
+    }
+}
+
+void Terrain::draw(const Map& mapgen, int playerX, int playerY)
+{
+    // Effacement DMA (Rapide)
+    dmaFillWords(RGB15(0, 0, 0) | BIT(15), this->currentWritingBuffer, 256 * 192 * 2);
+
+    const auto& map     = mapgen.getMap();
+    int         mapSize = mapgen.getWidth();
+
+    // On calcule le décalage de scroll fin (0 à 31 pixels)
+    int fineScrollX = (playerX - playerY) * 16;
+    int fineScrollY = (playerX + playerY) * 8;
+
+    // Cette boucle parcourt l'écran comme une grille de tuiles 32x16
+    // On part de camX/camY et on s'étend pour couvrir 256x192
+    for (int row = -12; row < 10; row++) // Vertical
+    {
+        // On détermine si la ligne est paire ou impaire
+        bool isEven = ((row & 1) == 0);
+
+        // Si on veut ajouter juste une demi-colonne,
+        // on n'autorise l'itération supplémentaire que pour les lignes paires (ou impaires)
+        int maxCol = isEven ? 4 : 5;
+
+        for (int col = -3; col < maxCol; col++) // Horizontal
+        {
+            const int rowHalf = (row >> 1);
+            // Formule magique pour transformer row/col d'écran en X/Y de map
+            // sans AUCUN doublon de tuile
+            int x = playerX + rowHalf + col;
+            int y = playerY + (row - rowHalf) - col;
+
+            if (x < 0 || y < 0 || x >= mapSize || y >= mapSize)
+                continue;
+
+            // Position écran relative à la caméra
+            int sX = (x - y) * 16 - fineScrollX + 128 - 16;
+            int sY = (x + y) * 8 - fineScrollY + 96;
+
+            const int tileType = static_cast<int>(map[x][y]);
+
+            // sY -= terrainTilesOffset[tileType];
+            const SpanTile& tile = terrainTilesTable[tileType];
+
+            renderSpanTile(tile, sX, sY);
         }
     }
 }

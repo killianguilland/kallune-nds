@@ -42,7 +42,7 @@ Minimap::Minimap(const Map& mapgen)
 
     // 3. Copier la palette vers la mémoire palette des sprites du moteur SUB
     // On la met à l'index 0 (la première palette de 16 couleurs)
-    dmaCopy(playerIconPal, SPRITE_PALETTE_SUB, playerIconPalLen);
+    dmaCopy(playerIconPal, &SPRITE_PALETTE_SUB[16], playerIconPalLen);
 
     // 1. Allouer la mémoire en RAM (256 Ko pour un buffer 512x256)
     fullMapBuffer = (u16*)malloc(BUF_W * BUF_H * sizeof(u16));
@@ -223,7 +223,7 @@ void Minimap::draw(int playerX, int playerY)
                screenX - 4, // Centrage
                screenY - 4, // Centrage
                0,           // Priorité
-               0,           // Palette
+               1,           // Palette
                SpriteSize_8x8, SpriteColorFormat_16Color, playerSpriteGfx, -1, false, hide, false, false, false);
 
         oamUpdate(&oamSub);

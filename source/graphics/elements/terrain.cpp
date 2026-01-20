@@ -5,7 +5,7 @@
 static const std::array<SpanTile, 6> terrainTilesTable = {{
     {tile_104_offsets, tile_104_data}, // Water
     {tile_061_offsets, tile_061_data}, // Sand
-    {tile_037_offsets, tile_037_data}, // Grass
+    {tile_024_offsets, tile_024_data}, // Grass
     {tile_000_offsets, tile_000_data}, // Wall
     {tile_104_offsets, tile_104_data}, // Flower
     {tile_025_offsets, tile_025_data}, // Solid Wall
@@ -15,10 +15,17 @@ static const std::array<int, 6> terrainTilesOffset = {{
     0,  // Water
     0,  // Sand
     0,  // Grass
-    16, // Wall
+    5,  // Wall
     0,  // Flower
-    24, // Solid Wall
+    10, // Solid Wall
 }};
+
+u16 skyColor16 = RGB15(144 / 8, 216 / 8, 216 / 8) | BIT(15);
+
+// 2. On la répète pour créer une valeur 32 bits (Pixel 1 | Pixel 2)
+u32 skyColor32 = skyColor16 | (skyColor16 << 16);
+
+const int cullingOffset = 2;
 
 Terrain::Terrain()
 {
@@ -102,7 +109,7 @@ __attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTil
 
 void Terrain::draw(const Map& mapgen, int playerX, int playerY)
 {
-    dmaFillWords(RGB15(0, 0, 0) | BIT(15), this->currentWritingBuffer, 256 * 192 * 2);
+    dmaFillWords(skyColor32, this->currentWritingBuffer, 256 * 192 * 2);
 
     const auto& map     = mapgen.getMap();
     int         mapSize = mapgen.getWidth();
@@ -111,13 +118,13 @@ void Terrain::draw(const Map& mapgen, int playerX, int playerY)
     const int fineScrollX = (playerX - playerY) * 16 + 16 - 128;
     const int fineScrollY = (playerX + playerY) * 8 - 96;
 
-    for (int row = -12; row < 10; row++)
+    for (int row = -12 - cullingOffset; row < 10 + cullingOffset; row++)
     {
         const int  rowHalf = (row >> 1);
         const bool isEven  = ((row & 1) == 0);
-        const int  maxCol  = isEven ? 4 : 5;
+        const int  maxCol  = isEven ? 4 + cullingOffset : 5 + cullingOffset;
 
-        for (int col = -3; col < maxCol; col++)
+        for (int col = -3 - cullingOffset; col < maxCol; col++)
         {
             int x = playerX + rowHalf + col;
             int y = playerY + (row - rowHalf) - col;
@@ -128,10 +135,14 @@ void Terrain::draw(const Map& mapgen, int playerX, int playerY)
             int sX = (x - y) * 16 - fineScrollX;
             int sY = (x + y) * 8 - fineScrollY;
 
+            const int tileType = static_cast<int>(map[x][y]);
+
+            sY -= terrainTilesOffset[tileType];
+
             if (sX <= -32 || sX >= 256 || sY <= -32 || sY >= 192)
                 continue;
 
-            const SpanTile& tile = terrainTilesTable[(int)map[x][y]];
+            const SpanTile& tile = terrainTilesTable[tileType];
 
             // --- DETECTION DU FAST PATH ---
             // Si la tuile est entre X[0-224] et Y[0-160], elle ne nécessite aucun clipping

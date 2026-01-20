@@ -2,6 +2,7 @@
 
 #include <nds.h>
 #include <tile_000.h>
+#include <tile_024.h>
 #include <tile_025.h>
 #include <tile_037.h>
 #include <tile_061.h>

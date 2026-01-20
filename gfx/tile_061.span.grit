@@ -1,6 +1,6 @@
 # --- Configuration pour Software Blitting ---
 
--s tile104
+-s tile061
 
 # 1. Mode Bitmap
 -gb
@@ -22,3 +22,6 @@
 # 6. Option de sécurité pour le bit d'alpha
 # -al force le bit 15 à 0 pour la couleur transparente
 -al
+
+-ftb          # File Type Binary (indispensable pour avoir un .bin)
+-fh!          # Pas de header .h (on va générer le nôtre en .cpp)

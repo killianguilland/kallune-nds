@@ -1,6 +1,24 @@
 #include "terrain.hpp"
 #include <array>
 
+// Tableau de correspondance MapType -> Span-List
+static const std::array<SpanTile, 6> terrainTilesTable = {{
+    {tile_104_offsets, tile_104_data}, // Water
+    {tile_061_offsets, tile_061_data}, // Sand
+    {tile_037_offsets, tile_037_data}, // Grass
+    {tile_000_offsets, tile_000_data}, // Wall
+    {tile_104_offsets, tile_104_data}, // Flower
+    {tile_025_offsets, tile_025_data}, // Solid Wall
+}};
+
+static const std::array<int, 6> terrainTilesOffset = {{
+    0,  // Water
+    0,  // Sand
+    0,  // Grass
+    16, // Wall
+    0,  // Flower
+    24, // Solid Wall
+}};
 
 Terrain::Terrain()
 {
@@ -11,96 +29,50 @@ Terrain::Terrain()
     this->currentWritingBuffer = this->backBuffer;
 }
 
-void Terrain::draw(const Map& mapgen, int camX, int camY)
+void Terrain::renderSpanTile(const SpanTile& tile, int screenX, int screenY)
 {
-    // Effacement rapide avec DMA
-    dmaFillWords(RGB15(0, 0, 0) | BIT(15), this->currentWritingBuffer, 256 * 192 * 2);
+    const u32* offsets = tile.offsets;
+    const u16* data    = tile.data;
 
-    const std::vector<std::vector<MapType>>& map     = mapgen.getMap();
-    int                                      mapSize = mapgen.getWidth();
-
-    int isoScrollX = (camX - camY) * 16;
-    int isoScrollY = (camX + camY) * 8;
-
-    // Culling par grille (Losange)
-    int range       = 10;
-    int startX_grid = camX - range;
-    int endX_grid   = camX + range;
-    int startY_grid = camY - range;
-    int endY_grid   = camY + range;
-
-    // Bornes de sécurité pour la grille
-    if (startX_grid < 0)
-        startX_grid = 0;
-    if (startY_grid < 0)
-        startY_grid = 0;
-    if (endX_grid > mapSize)
-        endX_grid = mapSize;
-    if (endY_grid > mapSize)
-        endY_grid = mapSize;
-
-    for (int y = startY_grid; y < endY_grid; y++)
+    for (int l = 0; l < 32; l++)
     {
-        for (int x = startX_grid; x < endX_grid; x++)
+        int drawY = screenY + l;
+        if (drawY < 0 || drawY >= 192)
+            continue;
+
+        const u16* ptr      = &data[offsets[l]];
+        int        numSpans = *ptr++;
+        u16*       dstRow   = &this->currentWritingBuffer[drawY * 256];
+
+        while (numSpans--)
         {
-            // Position écran relative au centre
-            int screenX = (x - y) * 16 - isoScrollX + 128;
-            int screenY = (x + y) * 8 - isoScrollY + 96 - 16;
+            int spanX       = *ptr++;
+            int originalLen = *ptr++;
+            int len         = originalLen;
 
-            // Culling tuile entière
-            if (screenX < -32 || screenX >= 256 || screenY < -32 || screenY >= 192)
-                continue;
+            int xStart = screenX + spanX;
+            int xEnd   = xStart + len;
 
-            // Choix du graphisme (Bitmap brut)
-            const u16* tileGfx = nullptr;
-
-            switch (map[x][y])
+            int clipLeft = 0;
+            if (xStart < 0)
             {
-            case MapType::WALL: tileGfx = (u16*)tile000Bitmap; break;
-            case MapType::GRASS: tileGfx = (u16*)tile037Bitmap; break;
-            case MapType::WATER: tileGfx = (u16*)tile104Bitmap; break;
-            case MapType::SOLID_WALL: tileGfx = (u16*)tile025Bitmap; break;
-            case MapType::SAND: tileGfx = (u16*)tile061Bitmap; break;
-            case MapType::FLOWER: tileGfx = (u16*)tile104Bitmap; break;
-            default: continue;
+                clipLeft = -xStart;
+                xStart   = 0;
             }
-
-            // Rendu Bitmap avec test de transparence (p1 == 0x8000 ou bit 15)
-            for (int l = 0; l < 32; l++)
+            if (xEnd > 256)
             {
-                int drawY = screenY + l;
-                if (drawY < 0 || drawY >= 192)
-                    continue;
-
-                u16*       dstLine = &this->currentWritingBuffer[drawY * 256 + screenX];
-                const u16* srcLine = &tileGfx[l * 32];
-
-                for (int c = 0; c < 32; c += 2)
-                {
-                    int currentX = screenX + c;
-
-                    // Clipping horizontal simple
-                    if (currentX < 0 || currentX >= 255)
-                        continue;
-
-                    // Lecture 32 bits (2 pixels)
-                    u32 chunk = *(u32*)&srcLine[c];
-                    u16 p1    = chunk & 0xFFFF;
-                    u16 p2    = chunk >> 16;
-
-                    // Test pixel 1
-                    if (!(p1 == 0x8000 || !(p1 & BIT(15))))
-                    {
-                        dstLine[c] = p1;
-                    }
-
-                    // Test pixel 2
-                    if (!(p2 == 0x8000 || !(p2 & BIT(15))))
-                    {
-                        dstLine[c + 1] = p2;
-                    }
-                }
+                len -= (xEnd - 256);
             }
+            len -= clipLeft;
+
+            if (len > 0)
+            {
+                const u16* src = ptr + clipLeft;
+                // On retire le debug color-coding pour la performance
+                for (int i = 0; i < len; i++)
+                    dstRow[xStart + i] = src[i];
+            }
+            ptr += originalLen;
         }
     }
 }

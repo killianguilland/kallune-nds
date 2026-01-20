@@ -1,7 +1,6 @@
 #include "terrain.hpp"
 #include <array>
 
-
 // Base Tiles
 static const SpanTile tile104 = {tile_104_offsets, tile_104_data}; // Normal
 static const SpanTile tile105 = {tile_105_offsets, tile_105_data}; // Top
@@ -66,14 +65,13 @@ static const SpanTile grassBase = {tile_024_offsets, tile_024_data};
 static const SpanTile wallBase  = {tile_000_offsets, tile_000_data};
 static const SpanTile solidBase = {tile_025_offsets, tile_025_data};
 
-
 static const std::array<TerrainVariation, 6> terrainTilesTable = {{
     {&waterBase, waterVariants, 0, true}, // Water
     {&sandBase, nullptr, 0, false},       // Sand
     {&grassBase, nullptr, 0, false},      // Grass
-    {&wallBase, wallVariants, 5, true},   // Wall
+    {&wallBase, wallVariants, 12, true},  // Wall
     {&waterBase, nullptr, 0, false},      // Flower
-    {&solidBase, nullptr, 10, false}      // Solid Wall
+    {&solidBase, nullptr, 15, false}      // Solid Wall
 }};
 
 u16 skyColor16 = RGB15(144 / 8, 216 / 8, 216 / 8) | BIT(15);
@@ -174,7 +172,7 @@ void Terrain::draw(const Map& mapgen, int playerX, int playerY)
     const int fineScrollX = (playerX - playerY) * 16 + 16 - 128;
     const int fineScrollY = (playerX + playerY) * 8 - 96;
 
-    for (int row = -12 - cullingOffset; row < 10 + cullingOffset; row++)
+    for (int row = -12 - cullingOffset; row < 10 + 2 + cullingOffset; row++)
     {
         const int  rowHalf = (row >> 1);
         const bool isEven  = ((row & 1) == 0);

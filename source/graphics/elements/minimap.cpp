@@ -209,7 +209,7 @@ void Minimap::draw(int playerX, int playerY)
     // 3. MISE À JOUR DU SPRITE JOUEUR
     if (this->playerSpriteGfx != nullptr)
     {
-        int absX = isoPlayerX * 2 + (BUF_W / 2);
+        int absX = isoPlayerX * 2 + (BUF_W / 2) + 2;
         int absY = isoPlayerY + 8 /*+ (BUF_H / 2 - mapWidth)*/;
 
         int screenX = absX - viewX;

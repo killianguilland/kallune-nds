@@ -1,14 +1,17 @@
 #include "game_scene.hpp"
+#include "graphics/elements/minimap.hpp"
 #include "graphics/hardware.hpp"
 #include "input/input.hpp"
 #include "input/states/playing_state.hpp"
 #include "utils/scene.hpp"
 
-GameScene::GameScene(const Game* game) : minimap(game->map), terrain(), game(game)
+GameScene::GameScene(const Game* game) : terrain(), game(game)
 {
     Hardware::setupGameLayout();
 
     backgroundBottom = new Background(gameBottomBitmap, gameBottomBitmapLen, true);
+
+    minimap = new Minimap(game->map);
 
     pauseButton = new Button(
         0, 0,
@@ -36,7 +39,7 @@ void GameScene::draw(const Input& input)
 
     // TODO : if badger moved more than a meaningful amount of pixels
     // if(this->badgerMoved) {
-    this->minimap.draw(x, y);
+    this->minimap->draw(x, y);
     // this->badgerMoved = false;
     // };
 }
@@ -49,5 +52,6 @@ void GameScene::postRender()
 GameScene::~GameScene()
 {
     delete pauseButton;
+    delete minimap;
     oamClear(&oamMain, 0, 0);
 }

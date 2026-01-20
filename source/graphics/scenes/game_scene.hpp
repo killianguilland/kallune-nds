@@ -25,7 +25,7 @@ private:
     Background* backgroundBottom{};
     Button*     pauseButton{};
     const Game* game{nullptr};
-    Minimap     minimap;
+    Minimap*    minimap;
     Terrain     terrain{};
     bool        badgerMoved{true};
     float       x{0};

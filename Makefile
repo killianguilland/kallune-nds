@@ -89,6 +89,16 @@ CFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES   := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 PNGFILES := $(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.png)))
+
+SPAN_SOURCES := $(foreach dir,$(GRAPHICS),$(wildcard $(dir)/*.span.png))
+PNGFILES     := $(filter-out %.span.png,$(PNGFILES))
+export SPAN_CPPS    := $(patsubst %.span.png,%.cpp,$(notdir $(SPAN_SOURCES)))
+# SPAN_OFILES  := $(SPAN_CPPS:.cpp=.o)
+
+CPPFILES += $(SPAN_CPPS)
+.PRECIOUS: %.cpp %.h
+.SECONDARY: $(SPAN_CPPS) $(SPAN_CPPS:.cpp=.h)
+
 BINFILES := $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 # prepare NitroFS directory
@@ -125,9 +135,11 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES   := $(addsuffix .o,$(BINFILES))\
-                   $(PNGFILES:.png=.o)\
-                   $(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+export OFILES := $(addsuffix .o,$(BINFILES)) \
+                 $(PNGFILES:.png=.o) \
+                 $(CPPFILES:.cpp=.o) \
+                 $(CFILES:.c=.o) \
+                 $(SFILES:.s=.o)
 export INCLUDE  := $(foreach dir,$(INCLUDES),-iquote $(CURDIR)/$(dir))\
                    $(foreach dir,$(LIBDIRS),-I$(dir)/include)\
                    -I$(CURDIR)/$(BUILD)\
@@ -209,6 +221,15 @@ $(GAME_ICON): $(notdir $(ICON))
 
 -include $(DEPSDIR)/*.d
 
+#---------------------------------------------------------------------------------
+# Rules to generate Span-List files from .span.png images
+#---------------------------------------------------------------------------------
+
+%.cpp %.h: %.span.png %.span.grit
+	@echo "Processing 16-bit Span Sprite: $<"
+	@python3 $(CURDIR)/../tools/span_gen.py $< $*.cpp
+
+$(OFILES): $(SPAN_CPPS:.cpp=.h)
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------

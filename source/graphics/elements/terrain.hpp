@@ -19,7 +19,7 @@ private:
     u16*        frontBuffer;
     u16*        backBuffer;
     u16*        currentWritingBuffer;
-    inline void renderSpanTile(const SpanTile& tile, int screenX, int screenY);
+    inline void renderSpanTile(const SpanTile& tile, int screenX, int screenY, bool needsClipping);
 
 public:
     Terrain();

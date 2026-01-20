@@ -29,98 +29,120 @@ Terrain::Terrain()
     this->currentWritingBuffer = this->backBuffer;
 }
 
-void Terrain::renderSpanTile(const SpanTile& tile, int screenX, int screenY)
+// On utilise 'inline' et on demande au compilateur d'optimiser à fond
+__attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTile& tile, int screenX, int screenY, bool needsClipping)
 {
     const u32* offsets = tile.offsets;
     const u16* data    = tile.data;
 
-    for (int l = 0; l < 32; l++)
-    {
-        int drawY = screenY + l;
-        if (drawY < 0 || drawY >= 192)
-            continue;
+    // 1. Clipping Vertical Hoisting (On calcule les bornes AVANT la boucle)
+    int startL = 0;
+    int endL   = 32;
 
+    if (needsClipping)
+    {
+        if (screenY < 0)
+            startL = -screenY;
+        if (screenY + 32 > 192)
+            endL = 192 - screenY;
+        if (startL >= 32 || endL <= 0)
+            return;
+    }
+
+    for (int l = startL; l < endL; l++)
+    {
+        int        drawY    = screenY + l;
         const u16* ptr      = &data[offsets[l]];
         int        numSpans = *ptr++;
         u16*       dstRow   = &this->currentWritingBuffer[drawY * 256];
 
         while (numSpans--)
         {
-            int spanX       = *ptr++;
-            int originalLen = *ptr++;
-            int len         = originalLen;
+            int        spanX       = *ptr++;
+            int        originalLen = *ptr++;
+            const u16* src         = ptr;
+            ptr += originalLen; // On avance déjà le pointeur pour le prochain span
 
             int xStart = screenX + spanX;
-            int xEnd   = xStart + len;
 
-            int clipLeft = 0;
-            if (xStart < 0)
+            if (needsClipping)
             {
-                clipLeft = -xStart;
-                xStart   = 0;
-            }
-            if (xEnd > 256)
-            {
-                len -= (xEnd - 256);
-            }
-            len -= clipLeft;
+                int len      = originalLen;
+                int clipLeft = 0;
+                if (xStart < 0)
+                {
+                    clipLeft = -xStart;
+                    xStart   = 0;
+                }
+                int xEnd = xStart + (len - clipLeft);
+                if (xEnd > 256)
+                    len -= (xEnd - 256);
+                len -= clipLeft;
 
-            if (len > 0)
-            {
-                const u16* src = ptr + clipLeft;
-                // On retire le debug color-coding pour la performance
+                if (len <= 0)
+                    continue;
+
+                const u16* finalSrc = src + clipLeft;
                 for (int i = 0; i < len; i++)
-                    dstRow[xStart + i] = src[i];
+                    dstRow[xStart + i] = finalSrc[i];
             }
-            ptr += originalLen;
+            else
+            {
+                // --- CHEMIN ULTRA RAPIDE ---
+                // Ici, aucune vérification. On sait que ça rentre.
+                // Optimisation possible : utiliser memcpy ou des copies u32
+                for (int i = 0; i < originalLen; i++)
+                {
+                    dstRow[xStart + i] = src[i];
+                }
+            }
         }
     }
 }
 
 void Terrain::draw(const Map& mapgen, int playerX, int playerY)
 {
-    // Effacement DMA (Rapide)
     dmaFillWords(RGB15(0, 0, 0) | BIT(15), this->currentWritingBuffer, 256 * 192 * 2);
 
     const auto& map     = mapgen.getMap();
     int         mapSize = mapgen.getWidth();
 
-    // On calcule le décalage de scroll fin (0 à 31 pixels)
-    int fineScrollX = (playerX - playerY) * 16;
-    int fineScrollY = (playerX + playerY) * 8;
+    // Pré-calculer les scrolls car ils ne changent pas dans la boucle
+    const int fineScrollX = (playerX - playerY) * 16 + 16 - 128;
+    const int fineScrollY = (playerX + playerY) * 8 - 96;
 
-    // Cette boucle parcourt l'écran comme une grille de tuiles 32x16
-    // On part de camX/camY et on s'étend pour couvrir 256x192
-    for (int row = -12; row < 10; row++) // Vertical
+    for (int row = -12; row < 10; row++)
     {
-        // On détermine si la ligne est paire ou impaire
-        bool isEven = ((row & 1) == 0);
+        const int  rowHalf = (row >> 1);
+        const bool isEven  = ((row & 1) == 0);
+        const int  maxCol  = isEven ? 4 : 5;
 
-        // Si on veut ajouter juste une demi-colonne,
-        // on n'autorise l'itération supplémentaire que pour les lignes paires (ou impaires)
-        int maxCol = isEven ? 4 : 5;
-
-        for (int col = -3; col < maxCol; col++) // Horizontal
+        for (int col = -3; col < maxCol; col++)
         {
-            const int rowHalf = (row >> 1);
-            // Formule magique pour transformer row/col d'écran en X/Y de map
-            // sans AUCUN doublon de tuile
             int x = playerX + rowHalf + col;
             int y = playerY + (row - rowHalf) - col;
 
             if (x < 0 || y < 0 || x >= mapSize || y >= mapSize)
                 continue;
 
-            // Position écran relative à la caméra
-            int sX = (x - y) * 16 - fineScrollX + 128 - 16;
-            int sY = (x + y) * 8 - fineScrollY + 96;
+            int sX = (x - y) * 16 - fineScrollX;
+            int sY = (x + y) * 8 - fineScrollY;
 
-            const int tileType = static_cast<int>(map[x][y]);
+            if (sX <= -32 || sX >= 256 || sY <= -32 || sY >= 192)
+                continue;
 
-            // sY -= terrainTilesOffset[tileType];
-            const SpanTile& tile = terrainTilesTable[tileType];
+            const SpanTile& tile = terrainTilesTable[(int)map[x][y]];
 
-            renderSpanTile(tile, sX, sY);
+            // --- DETECTION DU FAST PATH ---
+            // Si la tuile est entre X[0-224] et Y[0-160], elle ne nécessite aucun clipping
+            if (sX >= 0 && sX <= 224 && sY >= 0 && sY <= 160)
+            {
+                renderSpanTile(tile, sX, sY, false); // Version sans clipping
+            }
+            else
+            {
+                renderSpanTile(tile, sX, sY, true); // Version avec clipping
+            }
         }
     }
 }

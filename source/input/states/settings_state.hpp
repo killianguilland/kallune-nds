@@ -13,8 +13,8 @@ public:
     ButtonState typeButton{DEFAULT};
     ButtonState returnButton{DEFAULT};
 
-    int waterValue{0};
-    int sizeValue{0};
+    int waterValue{2};
+    int sizeValue{4};
     int typeValue{0};
 
     void update(InputState state, Router* router);

@@ -135,7 +135,7 @@ void Terrain::draw(const Map& mapgen, int playerX, int playerY)
             int sX = (x - y) * 16 - fineScrollX;
             int sY = (x + y) * 8 - fineScrollY;
 
-            const int tileType = static_cast<int>(map[x][y]);
+            const MapType tileType = mapgen.at(x, y);
 
             sY -= terrainTilesOffset[tileType];
 

@@ -49,7 +49,7 @@ void Player::move(int32_t dirX, int32_t dirY)
     // Vérification des bords de map simplifiée
     if ((uint32_t)getTileX() < (uint32_t)map.getWidth() && (uint32_t)getTileY() < (uint32_t)map.getHeight())
     {
-        if (map.getMap()[getTileX()][getTileY()] == MapType::FLOWER)
+        if (map.at(getTileX(), getTileY()) == MapType::FLOWER)
         {
             addScore(1);
             map.removeFlower(getTileX(), getTileY());
@@ -152,7 +152,7 @@ bool Player::mine()
 
     if (targetX >= 0 && targetY >= 0 && targetX < map.getWidth() && targetY < map.getHeight())
     {
-        if (map.getMap()[targetX][targetY] == MapType::WALL)
+        if (map.getMap()[targetY * map.getWidth() + targetX] == MapType::WALL)
         {
             map.changeTile(targetX, targetY, MapType::GRASS);
             miningCooldown = maxMiningCooldown;

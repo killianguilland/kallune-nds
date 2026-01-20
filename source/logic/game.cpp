@@ -80,7 +80,7 @@ void Game::handlePlayerMovement(const InputState& inputState)
 
 void Game::update(InputState inputState)
 {
-    cpuStartTiming(0);
+    // cpuStartTiming(0);
     if (player.isAlive())
     {
         handlePlayerMovement(inputState);
@@ -91,9 +91,9 @@ void Game::update(InputState inputState)
         // updateEntities();
     }
 
-    u32   cycles = cpuEndTiming();
-    float usage  = (cycles / 1120380.0f) * 100.0f;
-    fprintf(stderr, "LOGIC BUDGET: %f%%   \n", usage);
+    // u32   cycles = cpuEndTiming();
+    // float usage  = (cycles / 1120380.0f) * 100.0f;
+    // fprintf(stderr, "LOGIC BUDGET: %f%%   \n", usage);
 }
 
 float Game::getPlayerX() const
@@ -166,7 +166,7 @@ std::optional<std::pair<int, int>> Game::getRandomPlacablePosition()
     {
         for (int x = 0; x < width; ++x)
         {
-            MapType type = grid[x][y];
+            MapType type = grid[y * width + x];
             if ((type == MapType::GRASS || type == MapType::SAND || type == MapType::FLOWER) && occupiedTiles.find({x, y}) == occupiedTiles.end())
             {
                 validPositions.emplace_back(x, y);
@@ -210,7 +210,7 @@ bool Game::isWalkableTile(int x, int y) const
 {
     if (x < 0 || y < 0 || x >= map.getWidth() || y >= map.getHeight())
         return false;
-    float speed = map.getSpeedMap()[x][y];
+    float speed = map.getSpeedMap()[y * map.getWidth() + x];
     return speed > 0.0f;
 }
 

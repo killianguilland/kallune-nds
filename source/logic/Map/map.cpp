@@ -10,9 +10,17 @@ Map::Map(int waterValue, int sizeValue, int typeValue)
     // On initialise le générateur ici, avec ses paramètres !
     generator(sizeSettings[sizeValue], sizeSettings[sizeValue])
 {
-    // Maintenant que generator est correctement créé, on peut l'utiliser
     this->generator.generate(waterSettings[waterValue], 6U, 2, 4, 4);
-    this->map = this->generator.getMap();
+
+    auto genMap = this->generator.getMap();
+    map.resize(width * height);
+    for (int y = 0; y < height; y++)
+    {
+        for (int x = 0; x < width; x++)
+        {
+            map[y * width + x] = genMap[x][y];
+        }
+    }
 }
 
 // void Map::init() {
@@ -20,16 +28,13 @@ Map::Map(int waterValue, int sizeValue, int typeValue)
 //     map = this->generator.getMap();
 // }
 
-vector<vector<float>> Map::getSpeedMap() const
+std::vector<float> Map::getSpeedMap() const
 {
-    vector<vector<float>> speedMap(width, vector<float>(height, 1.0f));
+    std::vector<float> speedMap(width * height);
 
-    for (int x = 0; x < width; ++x)
+    for (int i = 0; i < width * height; ++i)
     {
-        for (int y = 0; y < height; ++y)
-        {
-            speedMap[x][y] = getSpeed(map[x][y]);
-        }
+        speedMap[i] = getSpeed(map[i]);
     }
 
     return speedMap;
@@ -58,17 +63,17 @@ bool Map::isWalkable(int tileX, int tileY)
 {
     if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
         return false;
-    float speed = getSpeed(map[tileX][tileY]);
-    return speed > 0.0f;
+    // Fast 1D access
+    return getSpeed(map[tileY * width + tileX]) > 0.0f;
 }
 
 void Map::removeFlower(int tileX, int tileY)
 {
     if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
         return;
-    if (map[tileX][tileY] == MapType::FLOWER)
+    if (map[tileY * width + tileX] == MapType::FLOWER)
     {
-        map[tileX][tileY] = MapType::GRASS;
+        map[tileY * width + tileX] = MapType::GRASS;
     }
 }
 
@@ -76,5 +81,5 @@ void Map::changeTile(int tileX, int tileY, MapType newType)
 {
     if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
         return;
-    map[tileX][tileY] = newType;
+    map[tileY * width + tileX] = newType;
 }

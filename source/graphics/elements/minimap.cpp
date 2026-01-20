@@ -123,7 +123,7 @@ Minimap::Minimap(const Map& mapgen)
             int isoX = (x - y) * 2 + offsetX;
             int isoY = (x + y) + offsetY;
 
-            u16 color = MapColorTable[(int)map[x][y]];
+            u16 color = MapColorTable[(int)map[y * mapWidth + x]];
 
             // Sécurité : On vérifie les bornes avant d'écrire
             if (isoX > 0 && isoX < BUF_W - 2 && isoY > 0 && isoY < BUF_H - 2)

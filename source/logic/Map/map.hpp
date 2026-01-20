@@ -6,29 +6,31 @@
 #include "utils/mapUtils.hpp"
 using namespace std;
 
-class Map
-{
+class Map {
 public:
     Map(int waterValue, int sizeValue, int typeValue);
 
-    vector<vector<float>> getSpeedMap() const;
+    std::vector<float> getSpeedMap() const;
 
     float getSpeed(MapType type) const;
 
     int getWidth() const { return width; }
     int getHeight() const { return height; }
 
-    void removeFlower(int tileX, int tileY);
-    const vector<vector<MapType>>& getMap() const { return map; }
-    bool isWalkable(int tileX, int tileY);
+    [[nodiscard]] MapType at(int x, int y) const { return map[y * width + x]; }
+    MapType&              at(int x, int y) { return map[y * width + x]; }
+
+    void                        removeFlower(int tileX, int tileY);
+    const std::vector<MapType>& getMap() const { return map; }
+    bool                        isWalkable(int tileX, int tileY);
 
     void changeTile(int tileX, int tileY, MapType newType);
     // void init();
 
 private:
-    vector<vector<MapType>> map;
-    int width;
-    int height;
+    std::vector<MapType> map;
+    int                  width;
+    int                  height;
 
 public:
     MapGeneration generator;

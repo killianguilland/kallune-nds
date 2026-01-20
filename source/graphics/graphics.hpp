@@ -34,6 +34,7 @@ private:
     // PauseScene *pause_scene {};
     // LoadingScene *loading_scene {};
     SceneInterface* currentScene = nullptr;
+    int             framecount{0};
 
     void setupScene(const Game* game, Scene scene);
 };

@@ -66,7 +66,9 @@ void Graphics::render(Router* router, Input input, const Game* game)
 
     u32   cycles = cpuEndTiming();
     float usage  = (cycles / 1120380.0f) * 100.0f;
-    fprintf(stderr, "GRAPHICS BUDGET: %f%%   \n", usage);
+    if (!(framecount % 60))
+        fprintf(stderr, "GRAPHICS BUDGET: %f%%   \n", usage);
+    framecount++;
 }
 
 void Graphics::postRender(Router* router)

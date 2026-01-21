@@ -48,7 +48,7 @@ private:
 public:
     Terrain();
     // posX et posY correspondent à la position de la caméra dans le monde (0 à 8192)
-    void draw(const Map& mapgen, int playerX, int playerY);
+    void draw(const Map& mapgen, int32_t playerX_fp, int32_t playerY_fp);
     void swapBuffers();
     ~Terrain() = default;
 };

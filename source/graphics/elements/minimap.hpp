@@ -14,7 +14,7 @@ private:
 
 public:
     Minimap(const Map& mapgen);
-    void draw(int playerX, int playerY);
+    void draw(int32_t playerX_fp, int32_t playerY_fp);
     ~Minimap();
 
     // Minimap(const Minimap&) = delete;

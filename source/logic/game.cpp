@@ -96,16 +96,6 @@ void Game::update(InputState inputState)
     // fprintf(stderr, "LOGIC BUDGET: %f%%   \n", usage);
 }
 
-float Game::getPlayerX() const
-{
-    return player.getX();
-}
-
-float Game::getPlayerY() const
-{
-    return player.getY();
-}
-
 std::vector<EntityInfo> Game::getEntitiesInfo() const
 {
     std::vector<EntityInfo> infos;

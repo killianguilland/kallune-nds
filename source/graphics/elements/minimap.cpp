@@ -150,11 +150,14 @@ Minimap::Minimap(const Map& mapgen)
     }
 }
 
-void Minimap::draw(int playerX, int playerY)
+void Minimap::draw(int32_t playerX_fp, int32_t playerY_fp)
 {
     // 0. SÉCURITÉ : On ne fait rien si le buffer n'existe pas
     if (this->fullMapBuffer == nullptr)
         return;
+
+    int playerX = playerX_fp >> 8;
+    int playerY = playerY_fp >> 8;
 
     u16* vramBase = (u16*)BG_BMP_RAM_SUB(0);
 

@@ -161,7 +161,7 @@ __attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTil
     }
 }
 
-void Terrain::draw(const Map& mapgen, int playerX, int playerY)
+void Terrain::draw(const Map& mapgen, int32_t playerX_fp, int32_t playerY_fp)
 {
     dmaFillWords(skyColor32, this->currentWritingBuffer, 256 * 192 * 2);
 
@@ -169,16 +169,23 @@ void Terrain::draw(const Map& mapgen, int playerX, int playerY)
     int         mapSize = mapgen.getWidth();
 
     // Pré-calculer les scrolls car ils ne changent pas dans la boucle
-    const int fineScrollX = (playerX - playerY) * 16 + 16 - 128;
-    const int fineScrollY = (playerX + playerY) * 8 - 96;
+    int playerX = playerX_fp >> 8;
+    int playerY = playerY_fp >> 8;
 
+
+    int32_t subX = playerX_fp & 0xFF; // Fraction de X
+    int32_t subY = playerY_fp & 0xFF; // Fraction de Y
+    int fineScrollX = (playerX - playerY) * 16 + ((subX - subY) >> 4);
+    int fineScrollY = (playerX + playerY) * 8 + ((subX + subY) >> 5);
+    fineScrollX -= 128; // Centre X
+    fineScrollY -= 96;
     for (int row = -12 - cullingOffset; row < 10 + 2 + cullingOffset; row++)
     {
         const int  rowHalf = (row >> 1);
         const bool isEven  = ((row & 1) == 0);
         const int  maxCol  = isEven ? 4 + cullingOffset : 5 + cullingOffset;
 
-        for (int col = -3 - cullingOffset; col < maxCol; col++)
+        for (int col = -4 - cullingOffset; col < maxCol; col++)
         {
             int x = playerX + rowHalf + col;
             int y = playerY + (row - rowHalf) - col;

@@ -6,17 +6,13 @@
 #include "utils/behavior.hpp"
 #include "utils/directions.hpp"
 
-#define FP_SHIFT 8
-#define FP_ONE   (1 << FP_SHIFT)
-
 Player::Player(float startX, float startY, Map& map)
-    : map(map), x(startX), y(startY), speed(5.f), tileSize(1.0f), alive(true), score(0)
+    : map(map), x(startX), y(startY), speed(1.f), tileSize(1.0f), alive(true), score(0)
 {
 }
 
 void Player::move(int32_t dirX, int32_t dirY)
 {
-    // dirX et dirY arrivent en tant qu'entiers (-1, 0, 1) ou en Fixed Point
     if (dirX == 0 && dirY == 0)
         return;
 
@@ -28,7 +24,7 @@ void Player::move(int32_t dirX, int32_t dirY)
     if (l2 > 0)
     {
         // 2. Utilisation de la fonction BIOS ultra-rapide pour la racine carrée
-        length = swiSqrt(l2 << FP_SHIFT); // On décale pour garder de la précision
+        length = swiSqrt(l2 << 12); // On décale pour garder de la précision
 
         // 3. Normalisation et application de la vitesse
         // On récupère la vitesse du sol (en Fixed Point également)
@@ -41,8 +37,8 @@ void Player::move(int32_t dirX, int32_t dirY)
 
         // Calcul final : (Direction * Vitesse * VitesseSol) / Longueur
         // On utilise des décalages de bits pour maintenir la précision du Fixed Point
-        x += (dirX * speed) / length;
-        y += (dirY * speed) / length;
+        x += (dirX * speed * (1 << 12)) / length;
+        y += (dirY * speed * (1 << 12)) / length;
     }
 
     // Gestion des collisions/fleurs (décommenté et optimisé)
@@ -68,25 +64,25 @@ void Player::setPosition(float newX, float newY)
     y = newY;
 }
 
-float Player::getX() const
-{
-    return x;
-}
+// float Player::getX() const
+// {
+//     return x;
+// }
 
-float Player::getY() const
-{
-    return y;
-}
+// float Player::getY() const
+// {
+//     return y;
+// }
 
-int Player::getTileX() const
-{
-    return static_cast<int>(x / tileSize);
-}
+// int Player::getTileX() const
+// {
+//     return static_cast<int>(x / tileSize);
+// }
 
-int Player::getTileY() const
-{
-    return static_cast<int>(y / tileSize);
-}
+// int Player::getTileY() const
+// {
+//     return static_cast<int>(y / tileSize);
+// }
 
 bool Player::isAlive() const
 {

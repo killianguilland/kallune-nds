@@ -4,6 +4,7 @@
 #include <gameTop.h>
 #include <nds.h>
 #include <pauseButton.h>
+#include <cstdint>
 #include "graphics/elements/background.hpp"
 #include "graphics/elements/button.hpp"
 #include "graphics/elements/minimap.hpp"
@@ -28,6 +29,6 @@ private:
     Minimap*    minimap;
     Terrain     terrain{};
     bool        badgerMoved{true};
-    float       x{0};
-    float       y{0};
+    int32_t     x{0};
+    int32_t     y{0};
 };

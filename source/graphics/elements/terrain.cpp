@@ -74,179 +74,154 @@ static const std::array<TerrainVariation, 6> terrainTilesTable = {{
     {&solidBase, nullptr, 15, false}      // Solid Wall
 }};
 
-u16 skyColor16 = RGB15(144 / 8, 216 / 8, 216 / 8) | BIT(15);
-
-// 2. On la répète pour créer une valeur 32 bits (Pixel 1 | Pixel 2)
-u32 skyColor32 = skyColor16 | (skyColor16 << 16);
-
-const int cullingOffset = 1;
+const int        cullingOffset = 1;
+static const u16 skyColor16    = RGB15(144 / 8, 216 / 8, 216 / 8) | BIT(15);
+static const u32 skyColor32    = skyColor16 | (skyColor16 << 16);
 
 Terrain::Terrain()
 {
-    // Initialisation des pointeurs de buffers (Mode 5)
-    // Bank A (128ko) et Bank C (128ko)
-    this->frontBuffer          = (u16*)BG_GFX;
-    this->backBuffer           = (u16*)0x06020000;
-    this->currentWritingBuffer = this->backBuffer;
+    this->firstRender = true;
+    this->lastCamX    = -9999;
+    this->lastCamY    = -9999;
 }
 
-// On utilise 'inline' et on demande au compilateur d'optimiser à fond
-__attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTile& tile, int screenX, int screenY, bool needsClipping)
+ITCM_CODE void Terrain::renderSpanTileWrapped(const SpanTile& tile, int worldX, int worldY)
 {
-    const u32* offsets = tile.offsets;
     const u16* data    = tile.data;
+    const u32* offsets = tile.offsets;
 
-    // 1. Clipping Vertical Hoisting (On calcule les bornes AVANT la boucle)
-    int startL = 0;
-    int endL   = 32;
-
-    if (needsClipping)
+    for (int l = 0; l < 32; l++)
     {
-        if (screenY < 0)
-            startL = -screenY;
-        if (screenY + 32 > 192)
-            endL = 192 - screenY;
-        if (startL >= 32 || endL <= 0)
-            return;
-    }
+        int        targetY = (worldY + l) & 255;
+        const u16* ptr     = &data[offsets[l]];
 
-    for (int l = startL; l < endL; l++)
-    {
-        int        drawY    = screenY + l;
-        const u16* ptr      = &data[offsets[l]];
-        int        numSpans = *ptr++;
-        u16*       dstRow   = &this->currentWritingBuffer[drawY * 256];
+        int numSpans = *ptr++;
+
+        u16* vramRow = (u16*)BG_BMP_RAM(0) + (targetY << 8);
 
         while (numSpans--)
         {
-            int        spanX       = *ptr++;
-            int        originalLen = *ptr++;
-            const u16* src         = ptr;
-            ptr += originalLen; // On avance déjà le pointeur pour le prochain span
+            int        spanX = *ptr++;
+            int        len   = *ptr++;
+            const u16* src   = ptr;
+            ptr += len;
+            if (len & 1)
 
-            int xStart = screenX + spanX;
-
-            if (needsClipping)
-            {
-                int len      = originalLen;
-                int clipLeft = 0;
-                if (xStart < 0)
-                {
-                    clipLeft = -xStart;
-                    xStart   = 0;
-                }
-                int xEnd = xStart + (len - clipLeft);
-                if (xEnd > 256)
-                    len -= (xEnd - 256);
-                len -= clipLeft;
-
-                if (len <= 0)
-                    continue;
-
-                const u16* finalSrc = src + clipLeft;
                 for (int i = 0; i < len; i++)
-                    dstRow[xStart + i] = finalSrc[i];
-            }
-            else
-            {
-                // --- CHEMIN ULTRA RAPIDE ---
-                // Ici, aucune vérification. On sait que ça rentre.
-                // Optimisation possible : utiliser memcpy ou des copies u32
-                for (int i = 0; i < originalLen; i++)
                 {
-                    dstRow[xStart + i] = src[i];
+                    int targetX      = (worldX + spanX + i) & 255;
+                    vramRow[targetX] = src[i];
                 }
-            }
         }
     }
 }
 
 void Terrain::draw(const Map& mapgen, int32_t playerX_fp, int32_t playerY_fp)
 {
-    dmaFillWords(skyColor32, this->currentWritingBuffer, 256 * 192 * 2);
+    int camX = (((playerX_fp - playerY_fp) * 16) >> 8) - 128;
+    int camY = (((playerX_fp + playerY_fp) * 8) >> 8) - 96;
 
-    const auto& map     = mapgen.getMap();
-    int         mapSize = mapgen.getWidth();
+    REG_BG3X = camX << 8;
+    REG_BG3Y = camY << 8;
 
-    // Pré-calculer les scrolls car ils ne changent pas dans la boucle
-    int playerX = playerX_fp >> 8;
-    int playerY = playerY_fp >> 8;
-
-
-    int32_t subX = playerX_fp & 0xFF; // Fraction de X
-    int32_t subY = playerY_fp & 0xFF; // Fraction de Y
-    int fineScrollX = (playerX - playerY) * 16 + ((subX - subY) >> 4);
-    int fineScrollY = (playerX + playerY) * 8 + ((subX + subY) >> 5);
-    fineScrollX -= 128; // Centre X
-    fineScrollY -= 96;
-    for (int row = -12 - cullingOffset; row < 10 + 2 + cullingOffset; row++)
+    if (firstRender)
     {
-        const int  rowHalf = (row >> 1);
-        const bool isEven  = ((row & 1) == 0);
-        const int  maxCol  = isEven ? 4 + cullingOffset : 5 + cullingOffset;
+        dmaFillWords(skyColor32, (void*)BG_BMP_RAM(0), 256 * 256 * 2);
 
-        for (int col = -4 - cullingOffset; col < maxCol; col++)
+        renderFullArea(mapgen, playerX_fp, playerY_fp);
+        firstRender = false;
+        lastCamX    = camX;
+        lastCamY    = camY;
+        return;
+    }
+
+    int dx = camX - lastCamX;
+    int dy = camY - lastCamY;
+
+    if (std::abs(dx) >= 4 || std::abs(dy) >= 4)
+    {
+        injectBorders(mapgen, playerX_fp, playerY_fp, camX, camY, dx, dy);
+        lastCamX = camX;
+        lastCamY = camY;
+    }
+}
+
+// --- INJECTION DES BORDS ---
+void Terrain::injectBorders(const Map& mapgen, int32_t pX_fp, int32_t pY_fp, int camX, int camY, int dx, int dy)
+{
+    int pX      = pX_fp >> 8;
+    int pY      = pY_fp >> 8;
+    int mapSize = mapgen.getWidth();
+
+    for (int row = -14; row < 14; row++)
+    {
+        for (int col = -6; col < 8; col++)
         {
-            int x = playerX + rowHalf + col;
-            int y = playerY + (row - rowHalf) - col;
+            bool isEdge = false;
+            if (dx > 0 && col >= 4)
+                isEdge = true;
+            if (dx < 0 && col <= -4)
+                isEdge = true;
+            if (dy > 0 && row >= 10)
+                isEdge = true;
+            if (dy < 0 && row <= -12)
+                isEdge = true;
+
+            if (!isEdge)
+                continue;
+
+            int x = pX + (row >> 1) + col;
+            int y = pY + (row - (row >> 1)) - col;
 
             if (x < 0 || y < 0 || x >= mapSize || y >= mapSize)
                 continue;
 
-            int sX = (x - y) * 16 - fineScrollX;
-            int sY = (x + y) * 8 - fineScrollY;
-
-            const MapType tileType = mapgen.at(x, y);
-            const auto&   typeData = terrainTilesTable[static_cast<int>(tileType)];
-
-            // Start with the default tile
+            const auto&     typeData   = terrainTilesTable[static_cast<int>(mapgen.at(x, y))];
             const SpanTile* tileToDraw = typeData.defaultTile;
 
-            // ONLY run the expensive neighbor logic if this tile type supports it
             if (typeData.isAutotiled)
             {
                 uint8_t mask = 0;
-                // Fast 1D neighbor checks
-                if (y > 0 && mapgen.at(x, y - 1) != tileType)
+                if (y > 0 && mapgen.at(x, y - 1) != mapgen.at(x, y))
                     mask |= 1;
-                if (y < mapSize - 1 && mapgen.at(x, y + 1) != tileType)
+                if (y < mapSize - 1 && mapgen.at(x, y + 1) != mapgen.at(x, y))
                     mask |= 2;
-                if (x > 0 && mapgen.at(x - 1, y) != tileType)
+                if (x > 0 && mapgen.at(x - 1, y) != mapgen.at(x, y))
                     mask |= 4;
-                if (x < mapSize - 1 && mapgen.at(x + 1, y) != tileType)
+                if (x < mapSize - 1 && mapgen.at(x + 1, y) != mapgen.at(x, y))
                     mask |= 8;
-
                 tileToDraw = typeData.variations[mask];
             }
 
-            sY -= typeData.heightOffset;
+            int sX = (x - y) * 16;
+            int sY = (x + y) * 8 - typeData.heightOffset;
 
-            // Now call your render function with tileToDraw
-            if (sX >= 0 && sX <= 224 && sY >= 0 && sY <= 160)
-            {
-                renderSpanTile(*tileToDraw, sX, sY, false);
-            }
-            else
-            {
-                renderSpanTile(*tileToDraw, sX, sY, true);
-            }
+            renderSpanTileWrapped(*tileToDraw, sX, sY);
         }
     }
 }
 
-void Terrain::swapBuffers()
+void Terrain::renderFullArea(const Map& mapgen, int32_t pX_fp, int32_t pY_fp)
 {
-    // Changer la page affichée par le moteur BG3 de la DS
-    if (this->currentWritingBuffer == this->backBuffer)
+    int pX = pX_fp >> 8;
+    int pY = pY_fp >> 8;
+
+    for (int row = -11; row < 11; row++)
     {
-        // On affiche la Bank C (Back)
-        REG_BG3CNT                 = (REG_BG3CNT & ~0x1F00) | (8 << 8);
-        this->currentWritingBuffer = this->frontBuffer;
-    }
-    else
-    {
-        // On affiche la Bank A (Front)
-        REG_BG3CNT                 = (REG_BG3CNT & ~0x1F00) | (0 << 8);
-        this->currentWritingBuffer = this->backBuffer;
+        for (int col = -5; col < 6; col++)
+        {
+            int x = pX + (row >> 1) + col;
+            int y = pY + (row - (row >> 1)) - col;
+
+            if (x < 0 || y < 0 || x >= mapgen.getWidth() || y >= mapgen.getHeight())
+                continue;
+
+            const auto& typeData = terrainTilesTable[static_cast<int>(mapgen.at(x, y))];
+
+            int sX = (x - y) * 16;
+            int sY = (x + y) * 8 - typeData.heightOffset;
+
+            renderSpanTileWrapped(*typeData.defaultTile, sX, sY);
+        }
     }
 }

@@ -44,11 +44,18 @@ private:
     u16*        backBuffer;
     u16*        currentWritingBuffer;
     inline void renderSpanTile(const SpanTile& tile, int screenX, int screenY, bool needsClipping);
+    int         lastCamX    = -9999;
+    int         lastCamY    = -9999;
+    bool        firstRender = true;
+
+    const int BUF_MASK = 255;
 
 public:
     Terrain();
     // posX et posY correspondent à la position de la caméra dans le monde (0 à 8192)
     void draw(const Map& mapgen, int32_t playerX_fp, int32_t playerY_fp);
-    void swapBuffers();
+    void renderFullArea(const Map& mapgen, int32_t pX_fp, int32_t pY_fp);
+    void injectBorders(const Map& mapgen, int32_t pX_fp, int32_t pY_fp, int camX, int camY, int dx, int dy);
+    void renderSpanTileWrapped(const SpanTile& tile, int worldX, int worldY);
     ~Terrain() = default;
 };

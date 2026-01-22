@@ -1,22 +1,24 @@
 #include "hardware.hpp"
 
 // Nettoie tout pour repartir sur une base saine
-void Hardware::reset() {
+void Hardware::reset()
+{
     vramDefault(); // Remet les banques par défaut
     oamClear(&oamMain, 0, 0);
     oamClear(&oamSub, 0, 0);
 }
 
-void Hardware::setupUILayout() {
+void Hardware::setupUILayout()
+{
     // reset(); // Toujours reset avant pour éviter les restes des autres scènes
-    
+
     // 1. Inversion des écrans : Main = BAS, Sub = HAUT
     lcdMainOnBottom();
 
     // 2. Configuration des Banques
-    vramSetPrimaryBanks(VRAM_A_MAIN_BG_0x06000000,  // Bank A pour le fond du bas (Main)
-                        VRAM_B_MAIN_BG_0x06020000,  // Bank B (libre ou pour un 2eme buffer)
-                        VRAM_C_SUB_BG_0x06200000,   // Bank C pour le fond du haut (Sub)
+    vramSetPrimaryBanks(VRAM_A_MAIN_BG_0x06000000, // Bank A pour le fond du bas (Main)
+                        VRAM_B_MAIN_BG_0x06020000, // Bank B (libre ou pour un 2eme buffer)
+                        VRAM_C_SUB_BG_0x06200000,  // Bank C pour le fond du haut (Sub)
                         VRAM_D_LCD);
 
     vramSetBankE(VRAM_E_MAIN_SPRITE); // Sprites pour le BAS (Main)
@@ -24,10 +26,8 @@ void Hardware::setupUILayout() {
 
     // 3. MAIN SCREEN SETUP (BAS)
     videoSetMode(
-        MODE_5_2D | 
-        DISPLAY_BG3_ACTIVE |  // On n'active QUE le BG3 pour l'instant
-        DISPLAY_SPR_ACTIVE | 
-        DISPLAY_SPR_1D
+        MODE_5_2D | DISPLAY_BG3_ACTIVE | // On n'active QUE le BG3 pour l'instant
+        DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D
     );
 
     // Initialisation du fond (BG3) sur le moteur Main (Bas)
@@ -35,7 +35,7 @@ void Hardware::setupUILayout() {
     int mainBg3 = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
     bgSetPriority(mainBg3, 3);
     bgSetScroll(mainBg3, 0, 0);
-   
+
     // 4. SUB SCREEN SETUP (HAUT)
     videoSetModeSub(MODE_5_2D | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D);
 
@@ -52,41 +52,58 @@ void Hardware::setupUILayout() {
     fillScreen();
 }
 
-void Hardware::setupGameLayout() {
-    // reset();
+void Hardware::setupGameLayout()
+{
     lcdMainOnTop();
-    
-    // Configuration banques (OK)
-    vramSetPrimaryBanks(VRAM_A_MAIN_BG_0x06000000, 
-                        VRAM_B_MAIN_BG_0x06020000, 
-                        VRAM_C_SUB_BG_0x06200000, 
-                        VRAM_D_LCD);
 
-    vramSetBankE(VRAM_E_MAIN_SPRITE);
-    vramSetBankI(VRAM_I_SUB_SPRITE);
-    
-    // Activation des moteurs (OK)
+    // --- CONFIGURATION MÉMOIRE VIDÉO (VRAM) ---
+
+    // BANQUE A (128 Ko) : Entièrement pour le Rolling Buffer du Terrain (Main Engine)
+    vramSetBankA(VRAM_A_MAIN_BG);
+
+    // BANQUE B (128 Ko) : Pour les Sprites du moteur Main (Animaux, Joueur)
+    // On prend une grosse banque car tes animations (loup, stag) sont gourmandes.
+    vramSetBankB(VRAM_B_MAIN_SPRITE);
+
+    // BANQUE C (128 Ko) : Pour le décor de l'écran du bas (Minimap)
+    vramSetBankC(VRAM_C_SUB_BG);
+
+    // BANQUE D (128 Ko) : Pour les Sprites du moteur Sub (UI, Boutons)
+    vramSetBankD(VRAM_D_SUB_SPRITE);
+
+    // Banques secondaires pour les palettes ou bonus
+    vramSetBankE(VRAM_E_LCD);        // Gardé en réserve
+    vramSetBankI(VRAM_I_SUB_SPRITE); // Extension sprites sub
+
+    // --- ACTIVATION DES MOTEURS ---
+    // Mode 5 pour avoir accès aux Bitmaps (BG3)
     videoSetMode(MODE_5_2D | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D);
     videoSetModeSub(MODE_5_2D | DISPLAY_BG3_ACTIVE | DISPLAY_SPR_ACTIVE | DISPLAY_SPR_1D);
 
-    // --- AJOUTS CRUCIAUX ICI ---
-    
-    // 1. Initialiser le BG3 du moteur Main (Haut) pour le Terrain
+    // --- INITIALISATION DES COUCHES (BACKGROUNDS) ---
+
+    // BG3 Main : Rolling Buffer 256x256 16-bit
+    // L'index 0 correspond au début de la VRAM A (0x06000000)
     bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
 
-    // 2. Initialiser le BG3 du moteur Sub (Bas) pour la Minimap/UI
-    // Sans cette ligne, l'écran reste noir car le registre BG3CNT_SUB est à zéro
+    // BG3 Sub : Minimap 256x256 16-bit
+    // L'index 0 correspond au début de la VRAM C (0x06200000)
     bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
 
-    // 3. Initialiser les DEUX OAM (Haut et Bas)
-    // Même si tu n'utilises pas encore de sprites en haut, l'init évite des bugs
-    oamInit(&oamMain, SpriteMapping_1D_32, false);
+    // --- INITIALISATION OAM (SPRITES) ---
+    oamInit(&oamMain, SpriteMapping_1D_128, false); // 128 pour gérer de grandes planches
     oamInit(&oamSub, SpriteMapping_1D_32, false);
 
-    fillScreen();
+    u16 skyColor  = RGB15(115 / 8, 150 / 8, 225 / 8) | BIT(15);
+    u32 fillValue = skyColor | (skyColor << 16);
+
+    // On remplit 256 * 256 pixels (soit 128 Ko)
+    dmaFillWords(fillValue, (void*)BG_BMP_RAM(0), 256 * 256 * 2);
+    dmaFillWords(fillValue, (void*)BG_BMP_RAM_SUB(0), 256 * 256 * 2);
 }
 
-void Hardware::fillScreen() {
+void Hardware::fillScreen()
+{
     // Dans ton setup de scène, juste après Hardware::setup...()
     u16 grassColor = RGB15(173 / 8, 119 / 8, 87 / 8) | BIT(15);
 

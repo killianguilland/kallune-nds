@@ -29,13 +29,13 @@ GameScene::GameScene(const Game* game) : terrain(), game(game)
 void GameScene::draw(const Input& input)
 {
     const PlayingState* playingState = input.getState<PlayingState>();
-    pauseButton->draw(playingState->pauseButton);
 
-    // Met à jour la position de la caméra pour suivre le joueur
     x = game->getPlayerX();
     y = game->getPlayerY();
 
     terrain.draw(game->map, x, y);
+
+    pauseButton->draw(playingState->pauseButton);
 
     // TODO : if badger moved more than a meaningful amount of pixels
     // if(this->badgerMoved) {
@@ -46,7 +46,7 @@ void GameScene::draw(const Input& input)
 
 void GameScene::postRender()
 {
-    terrain.swapBuffers();
+    // terrain.swapBuffers();
 }
 
 GameScene::~GameScene()

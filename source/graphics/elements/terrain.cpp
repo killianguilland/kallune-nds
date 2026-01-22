@@ -1,5 +1,6 @@
 #include "terrain.hpp"
 #include <array>
+#include "nds/ndstypes.h"
 
 // Base Tiles
 static const SpanTile tile104 = {tile_104_offsets, tile_104_data}; // Normal
@@ -90,16 +91,12 @@ Terrain::Terrain()
     this->currentWritingBuffer = this->backBuffer;
 }
 
-// On utilise 'inline' et on demande au compilateur d'optimiser à fond
-__attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTile& tile, int screenX, int screenY, bool needsClipping)
+ITCM_CODE void Terrain::renderSpanTile(const SpanTile& tile, int screenX, int screenY, bool needsClipping)
 {
     const u32* offsets = tile.offsets;
     const u16* data    = tile.data;
 
-    // 1. Clipping Vertical Hoisting (On calcule les bornes AVANT la boucle)
-    int startL = 0;
-    int endL   = 32;
-
+    int startL = 0, endL = 32;
     if (needsClipping)
     {
         if (screenY < 0)
@@ -115,20 +112,48 @@ __attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTil
         int        drawY    = screenY + l;
         const u16* ptr      = &data[offsets[l]];
         int        numSpans = *ptr++;
-        u16*       dstRow   = &this->currentWritingBuffer[drawY * 256];
+        u16*       dstRow   = &this->currentWritingBuffer[drawY << 8]; // << 8 au lieu de * 256
 
         while (numSpans--)
         {
-            int        spanX       = *ptr++;
-            int        originalLen = *ptr++;
-            const u16* src         = ptr;
-            ptr += originalLen; // On avance déjà le pointeur pour le prochain span
+            int        spanX = *ptr++;
+            int        len   = *ptr++;
+            const u16* src   = ptr;
+            ptr += len;
+            if (len & 1)
+                ptr++;
 
             int xStart = screenX + spanX;
 
-            if (needsClipping)
+            if (!needsClipping)
             {
-                int len      = originalLen;
+                u16* dst = dstRow + xStart;
+                if (len >= 2)
+                {
+                    if ((uintptr_t)dst & 2)
+                    {
+                        *dst++ = *src++;
+                        len--;
+                    }
+                    u32*       dst32  = (u32*)dst;
+                    const u32* src32  = (const u32*)src;
+                    int        blocks = len >> 1;
+                    while (blocks--)
+                    {
+                        *dst32++ = *src32++;
+                    }
+                    if (len & 1)
+                    {
+                        *((u16*)dst32) = *((u16*)src32);
+                    }
+                }
+                else if (len > 0)
+                {
+                    *dst = *src;
+                }
+            }
+            else
+            {
                 int clipLeft = 0;
                 if (xStart < 0)
                 {
@@ -140,21 +165,14 @@ __attribute__((always_inline)) inline void Terrain::renderSpanTile(const SpanTil
                     len -= (xEnd - 256);
                 len -= clipLeft;
 
-                if (len <= 0)
-                    continue;
-
-                const u16* finalSrc = src + clipLeft;
-                for (int i = 0; i < len; i++)
-                    dstRow[xStart + i] = finalSrc[i];
-            }
-            else
-            {
-                // --- CHEMIN ULTRA RAPIDE ---
-                // Ici, aucune vérification. On sait que ça rentre.
-                // Optimisation possible : utiliser memcpy ou des copies u32
-                for (int i = 0; i < originalLen; i++)
+                if (len > 0)
                 {
-                    dstRow[xStart + i] = src[i];
+                    const u16* finalSrc = src + clipLeft;
+                    u16*       finalDst = dstRow + xStart;
+                    // On reste en 16 bits ici pour la sécurité,
+                    // car le clipping casse souvent l'alignement 32 bits
+                    for (int i = 0; i < len; i++)
+                        finalDst[i] = finalSrc[i];
                 }
             }
         }
@@ -172,11 +190,10 @@ void Terrain::draw(const Map& mapgen, int32_t playerX_fp, int32_t playerY_fp)
     int playerX = playerX_fp >> 8;
     int playerY = playerY_fp >> 8;
 
-
-    int32_t subX = playerX_fp & 0xFF; // Fraction de X
-    int32_t subY = playerY_fp & 0xFF; // Fraction de Y
-    int fineScrollX = (playerX - playerY) * 16 + ((subX - subY) >> 4);
-    int fineScrollY = (playerX + playerY) * 8 + ((subX + subY) >> 5);
+    int32_t subX        = playerX_fp & 0xFF; // Fraction de X
+    int32_t subY        = playerY_fp & 0xFF; // Fraction de Y
+    int     fineScrollX = (playerX - playerY) * 16 + ((subX - subY) >> 4);
+    int     fineScrollY = (playerX + playerY) * 8 + ((subX + subY) >> 5);
     fineScrollX -= 128; // Centre X
     fineScrollY -= 96;
     for (int row = -12 - cullingOffset; row < 10 + 2 + cullingOffset; row++)
